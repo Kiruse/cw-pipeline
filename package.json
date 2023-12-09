@@ -1,0 +1,23 @@
+{
+  "name": "cw-pipeline",
+  "version": "0.1.0",
+  "module": "src/index.coffee",
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --preload bun-coffeescript/register --preload ./env.coffee src/index.coffee",
+    "build": "bun run --preload bun-coffeescript/register ./build.coffee && bun build --compile --outfile=bin/cw-pipeline build/index.js"
+  },
+  "dependencies": {
+    "@terra-money/feather.js": "link:@terra-money/feather.js",
+    "bun-coffeescript": "^1.0.3",
+    "commander": "^11.1.0",
+    "ink": "^4.4.1",
+    "yaml": "^2.3.4"
+  },
+  "devDependencies": {
+    "bun-types": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
