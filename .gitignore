@@ -1,5 +1,4 @@
 .shh/
-bin/
 build/
 node_modules/
 tmp/
