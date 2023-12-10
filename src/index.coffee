@@ -10,6 +10,12 @@ unless process.env.VERSION
 program = new Command 'cw-pipeline'
 program.version process.env.VERSION
 
+program.command 'setup'
+  .description 'Bootstrap your CosmWasm development environment.'
+  .action -> error 'not yet implemented'
+program.command 'init'
+  .description 'Initialize a new CosmWasm project using the cw-template.'
+  .action -> error 'not yet implemented'
 program.command 'store'
   .argument '[filepath]', 'Path to the WASM file to store. Defaults to the only WASM file in the artifacts directory.'
   .description 'Store a Smart Contract on the blockchain.'
