@@ -90,4 +90,6 @@ export const NetworkOption = (flags = '-n, --network') =>
   new Option(
     `${flags} <network>`,
     'Network to operate on.',
-  ).choices(['mainnet', 'testnet']);
+  )
+  .choices(['mainnet', 'testnet'])
+  .default('testnet');

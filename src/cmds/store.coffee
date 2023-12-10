@@ -1,17 +1,15 @@
+import { MsgStoreCode } from '@terra-money/feather.js/src'
 import { Option } from 'commander'
 import fs from 'fs/promises'
 import YAML from 'yaml'
-import { error, getChainID, getLCD, getMnemonicKey } from '../utils'
+import { error, getChainID, getLCD, getMnemonicKey, getLogTimestamp, getLogs, NetworkOption } from '../utils'
 
 ###* @param {import('commander').Command} prog ###
 export default (prog) ->
   prog.command 'store'
     .argument '[filepath]', 'Path to the WASM file to store. Defaults to the only WASM file in the artifacts directory.'
     .description 'Store a Smart Contract on the blockchain.'
-    .addOption(
-      new Option '-n, --network <network>', 'Network to use. Defaults to "testnet".'
-        .choices ['mainnet', 'testnet']
-    )
+    .addOption NetworkOption()
     .action ->
       [filepath] = this.args
       options = this.opts()
@@ -39,6 +37,8 @@ export default (prog) ->
         if err.isAxiosError
           console.error "AxiosError #{err.response.status}"
           console.error YAML.stringify err.response.data, indent: 2
+        else
+          console.error "#{err.name}: #{err.message}"
         error 'Failed to create transaction.'
 
       result = await lcd.tx.broadcast tx, chainId
@@ -54,13 +54,13 @@ export default (prog) ->
       codeIds = logs[0].eventsByType.store_code?.code_id?.map (scode) -> BigInt scode
       error 'No code IDs found' if codeIds.length is 0
 
-      await pushCodeIds codeIds
+      await pushCodeIds options.network, codeIds
 
       console.log "Code IDs: #{codeIds.join ', '}"
 
-pushCodeIds = (codeIds) ->
+pushCodeIds = (network, codeIds) ->
   saved = YAML.parse await fs.readFile 'codeIds.yml', 'utf8'
-  prop = switch options.network
+  prop = switch network
     when 'mainnet' then 'terra2'
     when 'testnet' then 'terra2-testnet'
     else error 'Invalid network'
