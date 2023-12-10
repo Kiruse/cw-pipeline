@@ -12,9 +12,11 @@
     "bun-coffeescript": "^1.0.3",
     "commander": "^11.1.0",
     "ink": "^4.4.1",
+    "react": "^18.2.0",
     "yaml": "^2.3.4"
   },
   "devDependencies": {
+    "@types/react": "^18.2.43",
     "bun-types": "latest"
   },
   "peerDependencies": {
