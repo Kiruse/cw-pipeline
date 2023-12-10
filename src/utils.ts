@@ -3,6 +3,22 @@ import fs from 'fs/promises'
 import os from 'os'
 
 export type Network = 'mainnet' | 'testnet';
+export type Logs = {
+  eventsByType: {
+    [type: string]: {
+      [attr: string]: string[];
+    };
+  };
+  msg_index: number;
+  log: string;
+  events: {
+    type: string;
+    attributes: {
+      key: string;
+      value: string;
+    }[];
+  }[];
+}[];
 
 export const getChainID = (network: Network = 'testnet') => network === 'mainnet' ? 'phoenix-1' : 'pisco-1';
 
@@ -49,4 +65,18 @@ export const getMnemonicKey = async (opts: Omit<MnemonicKeyOptions, 'mnemonic'> 
 export function error(...msgs: any[]): never {
   console.error(...msgs);
   process.exit(1);
+}
+
+// simple helper to get more type info into coffeescripts
+export const getLogs = (result: any): Logs => result.logs ?? [];
+
+export function getLogTimestamp() {
+  const now = new Date(Date.now());
+  const year = now.getFullYear();
+  const month = `${now.getMonth() + 1}`.padStart(2, '0');
+  const day = `${now.getDate()}`.padStart(2, '0');
+  const hour = `${now.getHours()}`.padStart(2, '0');
+  const minute = `${now.getMinutes()}`.padStart(2, '0');
+  const second = `${now.getSeconds()}`.padStart(2, '0');
+  return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
 }
