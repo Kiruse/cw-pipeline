@@ -44,15 +44,26 @@ export default (prog) ->
       result = await lcd.tx.broadcast tx, chainId
       error 'Error:', result.raw_log if result.code
 
-      logs = getLogs result
-      error 'No logs' if logs.length is 0
-      codeIds = logs[0].eventsByType.store_code?.code_id?.map (scode) -> BigInt scode
-      error 'No code IDs found' if codeIds.length is 0
-
-      await fs.appendFile 'codeIds.txt', codeIds.map((id) -> "#{id}\n").join ''
       await fs.appendFile 'cw-pipeline.log', [
         "[#{getLogTimestamp()}]\n"
         YAML.stringify(result, indent: 2) + '\n\n'
       ].join ''
 
+      logs = getLogs result
+      error 'No logs' if logs.length is 0
+      codeIds = logs[0].eventsByType.store_code?.code_id?.map (scode) -> BigInt scode
+      error 'No code IDs found' if codeIds.length is 0
+
+      await pushCodeIds codeIds
+
       console.log "Code IDs: #{codeIds.join ', '}"
+
+pushCodeIds = (codeIds) ->
+  saved = YAML.parse await fs.readFile 'codeIds.yml', 'utf8'
+  prop = switch options.network
+    when 'mainnet' then 'terra2'
+    when 'testnet' then 'terra2-testnet'
+    else error 'Invalid network'
+  saved[prop] = saved[prop] ? []
+  saved[prop].push codeIds...
+  await fs.writeFile 'codeIds.yml', YAML.stringify(saved, indent: 2)

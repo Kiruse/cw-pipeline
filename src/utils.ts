@@ -1,4 +1,5 @@
 import { LCDClient, MnemonicKey, MnemonicKeyOptions } from '@terra-money/feather.js/src';
+import { Option } from 'commander';
 import fs from 'fs/promises'
 import os from 'os'
 
@@ -19,6 +20,8 @@ export type Logs = {
     }[];
   }[];
 }[];
+
+export const DATADIR = `${os.homedir()}/.cw-pipeline`;
 
 export const getChainID = (network: Network = 'testnet') => network === 'mainnet' ? 'phoenix-1' : 'pisco-1';
 
@@ -80,3 +83,11 @@ export function getLogTimestamp() {
   const second = `${now.getSeconds()}`.padStart(2, '0');
   return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
 }
+
+export const initDataDir = () => fs.mkdir(DATADIR, { recursive: true });
+
+export const NetworkOption = (flags = '-n, --network') =>
+  new Option(
+    `${flags} <network>`,
+    'Network to operate on.',
+  ).choices(['mainnet', 'testnet']);
