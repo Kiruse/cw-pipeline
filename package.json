@@ -4,7 +4,7 @@
   "module": "src/index.coffee",
   "type": "module",
   "scripts": {
-    "dev": "bun run --preload bun-coffeescript/register --preload ./env.coffee src/index.coffee",
+    "dev": "bun run --preload bun-coffeescript/register --preload ./env.coffee src/cw-pipeline.coffee",
     "build": "bun run --preload bun-coffeescript/register ./build.coffee"
   },
   "dependencies": {
