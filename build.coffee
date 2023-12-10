@@ -12,7 +12,7 @@ await fs.mkdir BUILDDIR, recursive: true
 output = await Bun.build
   target: 'bun'
   entrypoints: [
-    'src/index.coffee'
+    'src/cw-pipeline.coffee'
   ]
   plugins: [
     CoffeeScriptPlugin()

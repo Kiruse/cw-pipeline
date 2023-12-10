@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "bun run --preload bun-coffeescript/register --preload ./env.coffee src/index.coffee",
-    "build": "bun run --preload bun-coffeescript/register ./build.coffee && bun build --compile --outfile=bin/cw-pipeline build/index.js"
+    "build": "bun run --preload bun-coffeescript/register ./build.coffee"
   },
   "dependencies": {
     "@terra-money/feather.js": "link:@terra-money/feather.js",
