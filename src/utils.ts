@@ -2,6 +2,7 @@ import { LCDClient, MnemonicKey, MnemonicKeyOptions } from '@terra-money/feather
 import { Option } from 'commander';
 import fs from 'fs/promises'
 import os from 'os'
+import YAML from 'yaml';
 
 export type Network = 'mainnet' | 'testnet';
 export type Logs = {
@@ -93,3 +94,23 @@ export const NetworkOption = (flags = '-n, --network') =>
   )
   .choices(['mainnet', 'testnet'])
   .default('testnet');
+
+/** Gets the chain name (+ optional -testnet suffix) for the given network. This should be used to
+ * identify the network in a map.
+ */
+export function getNetwork(option: Network): string {
+  switch (option) {
+    case 'mainnet':
+      return 'terra2';
+    case 'testnet':
+      return 'terra2-testnet';
+  }
+}
+
+export async function logResult(result: any, network: Network) {
+  await fs.appendFile(
+    'cw-pipeline.log',
+    `[${getLogTimestamp()} ${getNetwork(network)}]\n` +
+    YAML.stringify(result, { indent: 2 }) + '\n\n',
+  );
+}

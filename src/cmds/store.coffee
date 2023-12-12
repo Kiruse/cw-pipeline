@@ -2,7 +2,7 @@ import { MsgStoreCode } from '@terra-money/feather.js/src'
 import { Option } from 'commander'
 import fs from 'fs/promises'
 import YAML from 'yaml'
-import { error, getChainID, getLCD, getMnemonicKey, getLogTimestamp, getLogs, NetworkOption } from '../utils'
+import { error, getChainID, getLCD, getMnemonicKey, getLogTimestamp, getLogs, NetworkOption, logResult } from '../utils'
 
 ###* @param {import('commander').Command} prog ###
 export default (prog) ->
@@ -44,22 +44,20 @@ export default (prog) ->
       result = await lcd.tx.broadcast tx, chainId
       error 'Error:', result.raw_log if result.code
 
-      await fs.appendFile 'cw-pipeline.log', [
-        "[#{getLogTimestamp()}]\n"
-        YAML.stringify(result, indent: 2) + '\n\n'
-      ].join ''
+      await logResult result, options.network
 
       logs = getLogs result
       error 'No logs' if logs.length is 0
       codeIds = logs[0].eventsByType.store_code?.code_id?.map (scode) -> BigInt scode
-      error 'No code IDs found' if codeIds.length is 0
+      error 'No code IDs found' unless codeIds?.length
 
       await pushCodeIds options.network, codeIds
 
       console.log "Code IDs: #{codeIds.join ', '}"
 
 pushCodeIds = (network, codeIds) ->
-  saved = YAML.parse await fs.readFile 'codeIds.yml', 'utf8'
+  await fs.appendFile 'codeIds.yml', '' # essentially touch
+  saved = YAML.parse(await fs.readFile 'codeIds.yml', 'utf8') ? {}
   prop = switch network
     when 'mainnet' then 'terra2'
     when 'testnet' then 'terra2-testnet'

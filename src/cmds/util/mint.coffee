@@ -1,3 +1,5 @@
+import MintCw721Program from 'src/ink/MintCw721Program'
+import { renderSubProgram } from 'src/ink-utils'
 import { error } from 'src/utils'
 
 ###* @param {import('commander').Command} prog ###
@@ -15,8 +17,10 @@ mintCw20 = (prog) ->
 
 ###* @param {import('commander').Command} prog ###
 mintCw721 = (prog) ->
-  prog.command 'cw721'
-    .action -> error 'not yet implemented'
+  prog.command('cw721').action ->
+    data = await renderSubProgram MintCw721Program
+    console.log data
+    error 'not yet implemented'
 
 ###* @param {import('commander').Command} prog ###
 mintNative = (prog) ->

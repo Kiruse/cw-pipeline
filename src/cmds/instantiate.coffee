@@ -1,29 +1,29 @@
-import { renderSubProgram } from '../ink-utils'
+import { MsgInstantiateContract } from '@terra-money/feather.js/src'
 import { Option } from 'commander'
 import fs from 'fs/promises'
 import YAML from 'yaml'
-import { error, getChainID, getLCD, getMnemonicKey } from '../utils'
+import { renderSubProgram } from '../ink-utils'
+import { error, getChainID, getLCD, getMnemonicKey, getNetwork, NetworkOption, logResult, getLogs } from '../utils'
 
 ###* @param {import('commander').Command} prog ###
 export default (prog) ->
   prog.command 'instantiate'
     .description 'Instantiate a Smart Contract on the blockchain.'
     .argument '[codeId]', 'Code ID of the Smart Contract to instantiate. If omitted, takes the last code ID from codeIds.txt. Fails if none such.'
-    .option '-m, --init-msg', 'Path to the YAML file containing the init message. When omitted, prompts for input based on the contract\'s schema.'
+    .option '-m, --init-msg <path>', 'Path to the YAML file containing the init message. When omitted, prompts for input based on the contract\'s schema.'
     .addOption(
-      new Option '-n, --network <network>', 'Network to use. Defaults to "testnet".'
-        .choices ['mainnet', 'testnet']
+      new Option '-l, --label <label>', 'Label for the contract. Defaults to a generic label, but I recommend setting one for legibility.'
+        .default 'Generic Contract'
     )
-    .action ->
-      [codeId, initMsgFile] = this.args
-      options = this.opts()
-
-      codeId = await getLastCodeId() unless codeId
+    .addOption NetworkOption()
+    .action (codeId, options) ->
+      codeId = await getLastCodeId options.network unless codeId
+      codeId = Number codeId
       try
-        initMsgFile = if initMsgFile
-          await fs.readFile initMsgFile, 'utf8'
+        initMsg = if options.initMsg
+          YAML.parse (await fs.readFile options.initMsg, 'utf8').trim()
         else
-          await getInitMsgFile() unless initMsgFile
+          await inquireInitMsg()
       catch
         error 'Failed to read init message.'
 
@@ -32,23 +32,50 @@ export default (prog) ->
       wallet = lcd.wallet await getMnemonicKey()
       addr = wallet.key.accAddress 'terra'
 
-      initMsg = YAML.parse await fs.readFile initMsgFile, 'utf8'
-      tx = await wallet.createAndSignTx
-        msgs: [new MsgInstantiateContract addr, addr, codeId, JSON.stringify(initMsg)]
-        chainID: chainId
+      try
+        tx = await wallet.createAndSignTx
+          msgs: [new MsgInstantiateContract addr, addr, codeId, initMsg, [], options.label]
+          chainID: chainId
+      catch err
+        console.error "#{err.name}: #{err.message}"
+        if err.isAxiosError
+          console.error YAML.stringify err.response.data
+        process.exit 1
 
       result = await lcd.tx.broadcast tx, chainId
       error 'Error:', result.raw_log if result.code
-      console.log YAML.stringify result, indent: 2
 
-getLastCodeId = ->
+      await logResult result, options.network
+
+      logs = getLogs result
+      error 'No logs' if logs.length is 0
+      addrs = logs[0].eventsByType.instantiate?._contract_address
+      error 'No contract addresses found' unless addrs?.length
+
+      await pushContractAddrs options.network, codeId, addrs
+
+      console.log "Contract addresses: #{addrs.join ', '}"
+
+getLastCodeId = (network) ->
   try
-    codeIds = (await fs.readFile 'codeIds.txt', 'utf8').trim().split('\n').map (line) -> BigInt line.trim()
-    error 'No code IDs found' if codeIds.length is 0
-    codeIds[codeIds.length - 1]
+    doc = YAML.parse (await fs.readFile 'codeIds.yml', 'utf8').trim()
+    codeIds = doc[getNetwork network]
+    error 'No code IDs found' unless codeIds?.length
+    BigInt codeIds[codeIds.length - 1]
   catch
-    error 'Failed to read code IDs.'
+    error 'Failed to read code IDs. Ensure "codeIds.yml" exists and is valid, or manually specify the code ID.'
 
-getInitMsgFile = ->
+inquireInitMsg = ->
   error 'message helper not yet implemented'
   await renderSubProgram InquireInitMsgProgram
+
+pushContractAddrs = (network, codeId, addrs) ->
+  await fs.appendFile 'addrs.yml', '' # essentially touch
+  saved = YAML.parse(await fs.readFile 'addrs.yml', 'utf8') ? {}
+  network = getNetwork network
+  saved[network] = saved[network] ? []
+  for addr in addrs
+    saved[network].push
+      address: addr
+      codeId: codeId
+  await fs.writeFile 'addrs.yml', YAML.stringify saved, indent: 2
