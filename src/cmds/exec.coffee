@@ -3,7 +3,16 @@ import { Option } from 'commander'
 import fs from 'fs/promises'
 import YAML from 'yaml'
 import { loadConfig } from 'src/config'
-import { error, NetworkOption, getNetwork, getLCD, validateExecuteMsg, getBechPrefix, getChainID, logResult } from 'src/utils'
+import {
+  error,
+  getBechPrefix,
+  getChainID,
+  getLastContractAddr,
+  getLCD,
+  logResult,
+  NetworkOption,
+  validateExecuteMsg,
+} from 'src/utils'
 
 ###* @param {import('commander').Command} prog ###
 export default (prog) ->
@@ -40,13 +49,3 @@ export default (prog) ->
       error 'Error:', result.raw_log if result.code
       await logResult result, network
       console.log 'Success! Check cw-pipeline.log for details.'
-
-getLastContractAddr = (network) ->
-  network = getNetwork network
-  try
-    doc = YAML.parse await fs.readFile('addrs.yml', 'utf8')
-    addrs = doc[network]
-    error "No contract addresses found for #{network}" unless addrs?.length
-    addrs[addrs.length - 1]?.address
-  catch
-    error 'Failed to read contract addresses.'

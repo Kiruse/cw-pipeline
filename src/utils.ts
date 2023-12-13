@@ -158,3 +158,28 @@ export async function validateExecuteMsg(msg: any): Promise<void> {
     process.exit(1);
   }
 }
+
+export async function validateQueryMsg(msg: any): Promise<void> {
+  const schema = JSON.parse(await fs.readFile('schema/raw/query.json', 'utf8'));
+  const results = JsonSchema.validate(msg, schema);
+  if (!results.valid) {
+    console.error('Your query message failed validation:');
+    console.error(YAML.stringify(
+      results.errors.map(err => omit(err, 'schema')),
+      { indent: 2 }
+    ));
+    process.exit(1);
+  }
+}
+
+export async function getLastContractAddr(network: Network): Promise<string> {
+  try {
+    const doc = YAML.parse(await fs.readFile('addrs.yml', 'utf8'));
+    const addrs = doc?.[getNetwork(network)];
+    if (!addrs?.length)
+      error(`No contract addresses found for ${network}`);
+    return addrs[addrs.length - 1]?.address
+  } catch (err: any) {
+    error(`Error reading addrs.yml: ${err.name}: ${err.message}`);
+  }
+}
