@@ -3,8 +3,9 @@ import fs from 'fs/promises'
 import Mime from 'mime'
 import path from 'path'
 import YAML from 'yaml'
-import InquireConfirmMsgProgram from 'src/ink/InquireConfirmMsgProgram'
-import { renderSubProgram } from 'src/ink-utils'
+
+import ConfirmMsgSubProgram from 'src/blessed/ConfirmMsgSubProgram'
+import { runSubProgram } from 'src/subprogram'
 import { error } from 'src/utils'
 
 ###* @param {import('commander').Command} prog ###
@@ -40,8 +41,8 @@ mintCw721 = (prog) ->
       imgContent = await fs.readFile img
       img = new File [imgContent], path.basename(img), type: mime
 
-      confirmed = await renderSubProgram InquireConfirmMsgProgram, msg: meta
-      console.log confirmed
+      unless await runSubProgram new ConfirmMsgSubProgram meta
+        error 'Aborted. Metadata not confirmed'
       error 'not yet implemented'
 
 ###* @param {import('commander').Command} prog ###

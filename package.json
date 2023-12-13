@@ -8,7 +8,10 @@
     "build": "bun run --preload bun-coffeescript/register ./build.coffee"
   },
   "dependencies": {
+    "@kiruse/typed-events": "^1.0.1",
     "@terra-money/feather.js": "link:@terra-money/feather.js",
+    "@types/blessed": "^0.1.25",
+    "blessed": "^0.1.81",
     "bun-coffeescript": "^1.0.3",
     "commander": "^11.1.0",
     "mime": "^4.0.0",

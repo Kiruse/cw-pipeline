@@ -2,7 +2,6 @@ import { MsgInstantiateContract } from '@terra-money/feather.js/src'
 import { Option } from 'commander'
 import fs from 'fs/promises'
 import YAML from 'yaml'
-import { renderSubProgram } from '../ink-utils'
 import { error, getChainID, getLCD, getMnemonicKey, getNetwork, NetworkOption, logResult, getLogs } from '../utils'
 
 ###* @param {import('commander').Command} prog ###
@@ -67,7 +66,6 @@ getLastCodeId = (network) ->
 
 inquireInitMsg = ->
   error 'message helper not yet implemented'
-  await renderSubProgram InquireInitMsgProgram
 
 pushContractAddrs = (network, codeId, addrs) ->
   await fs.appendFile 'addrs.yml', '' # essentially touch

@@ -24,5 +24,3 @@ output = await Bun.build
 unless output.success
   console.error YAML.stringify output.logs
   process.exit 1
-
-await fs.cp path.resolve(import.meta.dir, 'node_modules/yoga-wasm-web/dist/yoga.wasm'), path.resolve(BUILDDIR, 'yoga.wasm')
