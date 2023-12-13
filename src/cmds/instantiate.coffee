@@ -3,7 +3,7 @@ import { MsgInstantiateContract } from '@terra-money/feather.js/src'
 import { Option } from 'commander'
 import fs from 'fs/promises'
 import YAML from 'yaml'
-import { error, getChainID, getLCD, getMnemonicKey, getNetwork, NetworkOption, logResult, getLogs } from '../utils'
+import { error, getChainID, getLCD, getNetwork, NetworkOption, logResult, getLogs } from '../utils'
 
 ###* @param {import('commander').Command} prog ###
 export default (prog) ->
@@ -17,8 +17,7 @@ export default (prog) ->
     )
     .addOption NetworkOption()
     .action (codeId, options) ->
-      cfg = await loadConfig()
-      network = options.network ? cfg.network
+      {network} = cfg = await loadConfig options
 
       codeId = await getLastCodeId network unless codeId
       codeId = Number codeId

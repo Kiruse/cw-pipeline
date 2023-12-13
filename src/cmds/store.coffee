@@ -2,7 +2,7 @@ import { loadConfig } from 'src/config'
 import { MsgStoreCode } from '@terra-money/feather.js/src'
 import fs from 'fs/promises'
 import YAML from 'yaml'
-import { error, getChainID, getLCD, getMnemonicKey, getLogs, NetworkOption, logResult } from '../utils'
+import { error, getChainID, getLCD, getLogs, NetworkOption, logResult } from '../utils'
 
 ###* @param {import('commander').Command} prog ###
 export default (prog) ->
@@ -11,7 +11,7 @@ export default (prog) ->
     .description 'Store a Smart Contract on the blockchain.'
     .addOption NetworkOption()
     .action (filepath, options) ->
-      cfg = await loadConfig()
+      {network} = cfg = await loadConfig options
       unless filepath
         try
           candidates = (await fs.readdir 'artifacts', withFileTypes: true)
@@ -23,10 +23,9 @@ export default (prog) ->
         catch
           error 'Failed to read WASM from artifacts.'
 
-      network = options.network ? cfg.network
       chainId = getChainID network
       lcd = getLCD network
-      wallet = lcd.wallet await cfg.getSecret 'mnemonic'
+      wallet = lcd.wallet await cfg.getMnemonicKey()
       bytecode = (await fs.readFile(filepath)).toString('base64')
 
       try

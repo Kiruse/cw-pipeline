@@ -12,6 +12,7 @@
     "@terra-money/feather.js": "link:@terra-money/feather.js",
     "bun-coffeescript": "^1.0.3",
     "commander": "^11.1.0",
+    "jsonschema": "^1.4.1",
     "yaml": "^2.3.4"
   },
   "devDependencies": {

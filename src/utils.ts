@@ -1,6 +1,7 @@
-import { LCDClient, MnemonicKey, MnemonicKeyOptions } from '@terra-money/feather.js/src';
+import { LCDClient } from '@terra-money/feather.js/src';
 import { Option } from 'commander';
 import fs from 'fs/promises'
+import * as JsonSchema from 'jsonschema';
 import os from 'os'
 import YAML from 'yaml';
 
@@ -65,9 +66,6 @@ export async function getSecret(name: string): Promise<string> {
   return secret.trim();
 }
 
-const getMnemonic = () => getSecret('mnemonic');
-export const getMnemonicKey = async (opts: Omit<MnemonicKeyOptions, 'mnemonic'> = {}) => new MnemonicKey({ mnemonic: await getMnemonic(), ...opts });
-
 export function error(...msgs: any[]): never {
   console.error(...msgs);
   process.exit(1);
@@ -109,6 +107,15 @@ export function getNetwork(option: Network): string {
   }
 }
 
+export function getBechPrefix(option: Network): string {
+  switch (option) {
+    case 'mainnet':
+      return 'terra';
+    case 'testnet':
+      return 'terra';
+  }
+}
+
 export async function logResult(result: any, network: Network) {
   await fs.appendFile(
     'cw-pipeline.log',
@@ -118,3 +125,36 @@ export async function logResult(result: any, network: Network) {
 }
 
 export const toShoutCase = (str: string) => str.replace(/([A-Z])/g, '_$1').toUpperCase();
+
+export function omit<T, K extends keyof T>(obj: T, ...keys: K[]): Omit<T, K> {
+  const result = { ...obj };
+  for (const key of keys)
+    delete result[key];
+  return result;
+}
+
+export async function validateInitMsg(msg: any): Promise<void> {
+  const schema = JSON.parse(await fs.readFile('schema/raw/instantiate.json', 'utf8'));
+  const results = JsonSchema.validate(msg, schema);
+  if (!results.valid) {
+    console.error('Your instantiate message failed validation:');
+    console.error(YAML.stringify(
+      results.errors.map(err => omit(err, 'schema')),
+      { indent: 2 }
+    ));
+    process.exit(1);
+  }
+}
+
+export async function validateExecuteMsg(msg: any): Promise<void> {
+  const schema = JSON.parse(await fs.readFile('schema/raw/execute.json', 'utf8'));
+  const results = JsonSchema.validate(msg, schema);
+  if (!results.valid) {
+    console.error('Your execute message failed validation:');
+    console.error(YAML.stringify(
+      results.errors.map(err => omit(err, 'schema')),
+      { indent: 2 }
+    ));
+    process.exit(1);
+  }
+}
