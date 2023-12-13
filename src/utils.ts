@@ -48,22 +48,25 @@ export const getLCD = (network: Network = 'testnet') => new LCDClient(
     },
 );
 
-async function getMnemonic(): Promise<string> {
-  let mnemonic: string | undefined;
+async function getSecret(name: string): Promise<string> {
+  let secret: string | undefined;
   try {
-    mnemonic = await fs.readFile(`${os.homedir()}/.shh/mnemonic`, 'utf8');
+    secret = await fs.readFile(`${os.homedir()}/.shh/${name}`, 'utf8');
   } catch {}
-  if (!mnemonic)
+  if (!secret) {
     try {
-      mnemonic = await fs.readFile('./.shh/mnemonic', 'utf8');
+      secret = await fs.readFile(`./.shh/${name}`, 'utf8');
     } catch {}
-  if (!mnemonic)
-    mnemonic = process.env.MNEMONIC
-  if (!mnemonic)
-    throw Error('No mnemonic found')
-  return mnemonic.trim();
+  }
+  if (!secret)
+    secret = process.env[toShoutCase(name)];
+  if (!secret)
+    throw Error(`Secret ${name} not found`);
+  return secret.trim();
 }
 
+export const getNftStorageKey = () => getSecret('nft.storage');
+const getMnemonic = () => getSecret('mnemonic');
 export const getMnemonicKey = async (opts: Omit<MnemonicKeyOptions, 'mnemonic'> = {}) => new MnemonicKey({ mnemonic: await getMnemonic(), ...opts });
 
 export function error(...msgs: any[]): never {
@@ -114,3 +117,5 @@ export async function logResult(result: any, network: Network) {
     YAML.stringify(result, { indent: 2 }) + '\n\n',
   );
 }
+
+export const toShoutCase = (str: string) => str.replace(/([A-Z])/g, '_$1').toUpperCase();
