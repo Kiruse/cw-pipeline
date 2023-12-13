@@ -10,12 +10,8 @@
   "dependencies": {
     "@kiruse/typed-events": "^1.0.1",
     "@terra-money/feather.js": "link:@terra-money/feather.js",
-    "@types/blessed": "^0.1.25",
     "bun-coffeescript": "^1.0.3",
     "commander": "^11.1.0",
-    "mime": "^4.0.0",
-    "nft.storage": "^7.1.1",
-    "react": "^18.2.0",
     "yaml": "^2.3.4"
   },
   "devDependencies": {

@@ -1,3 +1,4 @@
+import { loadConfig } from 'src/config'
 import { MsgInstantiateContract } from '@terra-money/feather.js/src'
 import { Option } from 'commander'
 import fs from 'fs/promises'
@@ -16,7 +17,10 @@ export default (prog) ->
     )
     .addOption NetworkOption()
     .action (codeId, options) ->
-      codeId = await getLastCodeId options.network unless codeId
+      cfg = await loadConfig()
+      network = options.network ? cfg.network
+
+      codeId = await getLastCodeId network unless codeId
       codeId = Number codeId
       try
         initMsg = if options.initMsg
@@ -26,9 +30,9 @@ export default (prog) ->
       catch
         error 'Failed to read init message.'
 
-      chainId = getChainID options.network
-      lcd = getLCD options.network
-      wallet = lcd.wallet await getMnemonicKey()
+      chainId = getChainID network
+      lcd = getLCD network
+      wallet = lcd.wallet await cfg.getSecret 'mnemonic'
       addr = wallet.key.accAddress 'terra'
 
       try
@@ -44,14 +48,14 @@ export default (prog) ->
       result = await lcd.tx.broadcast tx, chainId
       error 'Error:', result.raw_log if result.code
 
-      await logResult result, options.network
+      await logResult result, network
 
       logs = getLogs result
       error 'No logs' if logs.length is 0
       addrs = logs[0].eventsByType.instantiate?._contract_address
       error 'No contract addresses found' unless addrs?.length
 
-      await pushContractAddrs options.network, codeId, addrs
+      await pushContractAddrs network, codeId, addrs
 
       console.log "Contract addresses: #{addrs.join ', '}"
 

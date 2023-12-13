@@ -48,7 +48,7 @@ export const getLCD = (network: Network = 'testnet') => new LCDClient(
     },
 );
 
-async function getSecret(name: string): Promise<string> {
+export async function getSecret(name: string): Promise<string> {
   let secret: string | undefined;
   try {
     secret = await fs.readFile(`${os.homedir()}/.shh/${name}`, 'utf8');
@@ -65,7 +65,6 @@ async function getSecret(name: string): Promise<string> {
   return secret.trim();
 }
 
-export const getNftStorageKey = () => getSecret('nft.storage');
 const getMnemonic = () => getSecret('mnemonic');
 export const getMnemonicKey = async (opts: Omit<MnemonicKeyOptions, 'mnemonic'> = {}) => new MnemonicKey({ mnemonic: await getMnemonic(), ...opts });
 
@@ -89,14 +88,14 @@ export function getLogTimestamp() {
 }
 
 export const initDataDir = () => fs.mkdir(DATADIR, { recursive: true });
+export const getDataFile = (name: string, opts: fs.FileReadOptions = 'utf8') => fs.readFile(`${DATADIR}/${name}`, opts);
 
 export const NetworkOption = (flags = '-n, --network') =>
   new Option(
     `${flags} <network>`,
     'Network to operate on.',
   )
-  .choices(['mainnet', 'testnet'])
-  .default('testnet');
+  .choices(['mainnet', 'testnet']);
 
 /** Gets the chain name (+ optional -testnet suffix) for the given network. This should be used to
  * identify the network in a map.
