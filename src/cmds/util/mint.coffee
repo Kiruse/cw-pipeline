@@ -4,8 +4,6 @@ import Mime from 'mime'
 import path from 'path'
 import YAML from 'yaml'
 
-import ConfirmMsgSubProgram from 'src/blessed/ConfirmMsgSubProgram'
-import { runSubProgram } from 'src/subprogram'
 import { error } from 'src/utils'
 
 ###* @param {import('commander').Command} prog ###
