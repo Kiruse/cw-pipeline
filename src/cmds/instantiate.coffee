@@ -3,7 +3,7 @@ import { MsgInstantiateContract } from '@terra-money/feather.js/src'
 import { Option } from 'commander'
 import fs from 'fs/promises'
 import YAML from 'yaml'
-import { error, getChainID, getLCD, getNetwork, NetworkOption, logResult, getLogs } from '../utils'
+import { error, getChainID, getLCD, getNetwork, NetworkOption, logResult, getLogs, getBechPrefix } from '../utils'
 
 ###* @param {import('commander').Command} prog ###
 export default (prog) ->
@@ -31,8 +31,8 @@ export default (prog) ->
 
       chainId = getChainID network
       lcd = getLCD network
-      wallet = lcd.wallet await cfg.getSecret 'mnemonic'
-      addr = wallet.key.accAddress 'terra'
+      wallet = lcd.wallet await cfg.getMnemonicKey()
+      addr = wallet.key.accAddress getBechPrefix network
 
       try
         tx = await wallet.createAndSignTx
