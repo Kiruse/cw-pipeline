@@ -1,5 +1,7 @@
 import { MnemonicKey } from '@terra-money/feather.js/src';
-import { Network, getDataFile, getSecret } from './utils';
+import fs from 'fs/promises';
+import YAML from 'yaml';
+import { DATADIR, Network, getSecret } from './utils';
 
 export type SecretKey = 'mnemonic';
 
@@ -21,12 +23,13 @@ export interface CWPipelineConfig {
 }
 
 export async function loadConfig(options: { network: Network }): Promise<CWPipelineConfig> {
-  let result: any;
-  try {
-    result = normalizeConfig(await getDataFile('config.yaml'));
-  } catch {
-    result = normalizeConfig(DEFAULT_CONFIG);
-  }
+  const local = await tryReadConfig('.cw-pipeline.yml');
+  const user  = await tryReadConfig(`${DATADIR}/config.yml`);
+  const result = normalizeConfig({
+    ...DEFAULT_CONFIG,
+    ...user,
+    ...local,
+  });
   if (options.network) result.network = options.network;
   return result;
 }
@@ -41,6 +44,14 @@ export function normalizeConfig(config: any): CWPipelineConfig {
   config.getSecret = resolveSecret;
 
   return config;
+}
+
+async function tryReadConfig(filepath: string) {
+  try {
+    return YAML.parse(await fs.readFile(filepath, 'utf8'));
+  } catch {
+    return {};
+  }
 }
 
 function resolveSecret(this: CWPipelineConfig, key: SecretKey): Promise<string> {
