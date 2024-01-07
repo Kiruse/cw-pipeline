@@ -1,5 +1,5 @@
 import { loadConfig } from 'src/config'
-import { MsgStoreCode } from '@terra-money/feather.js/src'
+import { MsgStoreCode } from '@terra-money/feather.js'
 import fs from 'fs/promises'
 import YAML from 'yaml'
 import { error, getChainID, getLCD, getLogs, NetworkOption, logResult } from '../utils'

@@ -1,5 +1,5 @@
 import { loadConfig } from 'src/config'
-import { MsgInstantiateContract } from '@terra-money/feather.js/src'
+import { MsgInstantiateContract } from '@terra-money/feather.js'
 import { Option } from 'commander'
 import fs from 'fs/promises'
 import YAML from 'yaml'

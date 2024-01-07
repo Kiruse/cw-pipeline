@@ -1,4 +1,4 @@
-import { LCDClient } from '@terra-money/feather.js/src';
+import { LCDClient } from '@terra-money/feather.js';
 import { Option } from 'commander';
 import fs from 'fs/promises'
 import * as JsonSchema from 'jsonschema';
@@ -24,6 +24,7 @@ export type Logs = {
 }[];
 
 export const DATADIR = `${os.homedir()}/.cw-pipeline`;
+export const TMPDIR  = `${import.meta.dir}/../tmp`;
 
 export const getChainID = (network: Network = 'testnet') => network === 'mainnet' ? 'phoenix-1' : 'pisco-1';
 
@@ -182,4 +183,26 @@ export async function getLastContractAddr(network: Network): Promise<string> {
   } catch (err: any) {
     error(`Error reading addrs.yml: ${err.name}: ${err.message}`);
   }
+}
+
+export async function spawn(cmd: string, args: string[], opts: { cwd?: string } = {}) {
+  const { spawn } = await import('child_process');
+  return new Promise<void>((resolve, reject) => {
+    const proc = spawn(cmd, args, { stdio: 'inherit', ...opts });
+    proc.on('error', reject);
+    proc.on('exit', (code) => {
+      if (code === 0) resolve()
+      else reject(code);
+    });
+  });
+}
+
+export async function exec(cmd: string, args: string[], opts: { cwd?: string } = {}) {
+  const { exec } = await import('child_process');
+  return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
+    exec(`${cmd} ${args.join(' ')}`, opts, (err, stdout, stderr) => {
+      if (err) reject(err);
+      else resolve({stdout, stderr});
+    });
+  });
 }

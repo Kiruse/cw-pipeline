@@ -1,4 +1,4 @@
-import { MsgExecuteContract } from '@terra-money/feather.js/src'
+import { MsgExecuteContract } from '@terra-money/feather.js'
 import { Option } from 'commander'
 import fs from 'fs/promises'
 import YAML from 'yaml'

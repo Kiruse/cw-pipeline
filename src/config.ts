@@ -1,4 +1,4 @@
-import { MnemonicKey } from '@terra-money/feather.js/src';
+import { MnemonicKey } from '@terra-money/feather.js';
 import fs from 'fs/promises';
 import YAML from 'yaml';
 import { DATADIR, Network, getSecret } from './utils';
