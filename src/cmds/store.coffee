@@ -2,7 +2,7 @@ import { loadConfig } from 'src/config'
 import { MsgStoreCode } from '@terra-money/feather.js'
 import fs from 'fs/promises'
 import YAML from 'yaml'
-import { error, getChainID, getLCD, getLogs, NetworkOption, logResult } from '../utils'
+import { error, getChainID, getLCD, getLogs, NetworkOption, logResult, getBechPrefix } from '../utils'
 
 ###* @param {import('commander').Command} prog ###
 export default (prog) ->
@@ -26,11 +26,12 @@ export default (prog) ->
       chainId = getChainID network
       lcd = getLCD network
       wallet = lcd.wallet await cfg.getMnemonicKey()
+      addr = wallet.key.accAddress getBechPrefix network
       bytecode = (await fs.readFile(filepath)).toString('base64')
 
       try
         tx = await wallet.createAndSignTx
-          msgs: [new MsgStoreCode wallet.key.accAddress('terra'), bytecode]
+          msgs: [new MsgStoreCode addr, bytecode]
           chainID: chainId
       catch err
         if err.isAxiosError
