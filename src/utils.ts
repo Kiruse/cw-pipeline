@@ -23,8 +23,9 @@ export type Logs = {
   }[];
 }[];
 
-export const DATADIR = `${os.homedir()}/.cw-pipeline`;
-export const TMPDIR  = `${import.meta.dir}/../tmp`;
+export const ASSETSDIR = `${import.meta.dir}/../assets`;
+export const DATADIR   = `${os.homedir()}/.cw-pipeline`;
+export const TMPDIR    = `${import.meta.dir}/../tmp`;
 
 export const getChainID = (network: Network = 'testnet') => network === 'mainnet' ? 'phoenix-1' : 'pisco-1';
 
@@ -205,4 +206,23 @@ export async function exec(cmd: string, args: string[], opts: { cwd?: string } =
       else resolve({stdout, stderr});
     });
   });
+}
+
+var lastInquire: any;
+export async function getLastInquire(name: string, defaultValue: string): Promise<string> {
+  if (!lastInquire) {
+    try {
+      lastInquire = YAML.parse(await fs.readFile(`${TMPDIR}/last-inquire.yml`, 'utf8'));
+    } catch {
+      lastInquire = {};
+    }
+  }
+
+  if (name in lastInquire) return lastInquire[name];
+  return lastInquire[name] = defaultValue;
+}
+
+export async function saveLastInquire(answers: Record<string, any>) {
+  lastInquire = Object.assign(lastInquire || {}, answers);
+  await fs.writeFile(`${TMPDIR}/last-inquire.yml`, YAML.stringify(answers, {indent: 2}));
 }
