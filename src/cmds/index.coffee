@@ -1,3 +1,4 @@
+import AddrCommand from './addr.coffee'
 import ConfigCommand from './config.coffee'
 import ExecCommand from './exec.coffee'
 import InitCommand from './init.coffee'
@@ -8,6 +9,7 @@ import StoreCommand from './store.coffee'
 import WhoamiCommand from './whoami.coffee'
 
 export commands = [
+  AddrCommand
   ConfigCommand
   ExecCommand
   InitCommand
