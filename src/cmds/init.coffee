@@ -1,9 +1,9 @@
-import { file } from 'bun'
-import inquirer from 'inquirer'
+import { confirm, input } from '@inquirer/prompts'
+import { inquire } from '~/prompting'
 import fs from 'fs/promises'
 import os from 'os'
 import path from 'path'
-import { error, spawn, TMPDIR, getLastInquire, saveLastInquire, ASSETSDIR } from 'src/utils'
+import { error, spawn, ASSETSDIR } from '~/utils'
 
 ###* @param {import('commander').Command} prog ###
 export default (prog) ->
@@ -11,34 +11,25 @@ export default (prog) ->
     .description 'Initialize a new CosmWasm project. Assumes tools were already installed with `cw-pipeline setup`.'
     .action ->
       #region inquire
-      {monorepo, answers...} = await inquirer.prompt [
-        type: 'input'
-        name: 'name'
+      name = await inquire input,
         message: 'What is the name of your project?'
         default: -> process.cwd().replace(/\\/g, /\//).split('/').pop()
-      ,
-        type: 'input'
-        name: 'path'
+      path_ = await inquire input,
         message: 'Where would you like to setup your new project?'
         default: (answers) -> "./#{answers.name}"
-      ,
-        type: 'input'
-        name: 'author'
+      author = await inquire input,
         message: 'Who is the author of this project?'
-        default: await getLastInquire 'author', os.userInfo().username
-      ,
-        type: 'confirm'
+        default: -> os.userInfo().username
+      monorepo = await inquire confirm,
         name: 'monorepo'
         message: 'Would you like to setup a monorepo?'
         default: -> false
-      ,
-        type: 'confirm'
+      cw1_4 = await inquire confirm,
         name: 'cw-1.4'
         message: 'Does your target chain support CosmWasm 1.4?'
         default: -> false
-      ]
       #endregion inquire
-      await saveLastInquire answers
+
       if monorepo then error 'Monorepo support is not yet implemented.'
 
       #region copy
