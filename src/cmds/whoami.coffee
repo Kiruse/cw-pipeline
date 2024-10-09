@@ -1,4 +1,4 @@
-import { NetworkOption, MainnetOption } from '~/prompting.js'
+import { getNetworkConfig, getSigner, NetworkOption, MainnetOption } from '~/prompting.js'
 
 ###* @param {import('commander').Command} prog ###
 export default (prog) ->
@@ -8,5 +8,7 @@ export default (prog) ->
     .addOption MainnetOption()
     .action (options) ->
       network = await getNetworkConfig options
-      signer = await getSigner().then (s) => s.connect network
+      signer = await getSigner()
+      await signer.connect [network]
       console.log signer.address network
+      process.exit 0
