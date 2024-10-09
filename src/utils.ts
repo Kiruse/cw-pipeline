@@ -1,5 +1,4 @@
 import { type NetworkConfig } from '@apophis-sdk/core';
-import { recase } from '@kristiandupont/recase';
 import fs from 'fs/promises'
 import os from 'os'
 import path from 'path';
@@ -27,7 +26,7 @@ export const DATADIR   = path.resolve(os.homedir(), '.cw-pipeline');
 export const TMPDIR    = path.resolve(import.meta.dir, '../tmp');
 
 export function error(...msgs: any[]): never {
-  console.error(...msgs);
+  console.error(...msgs.map(msg => msg instanceof Error ? `${msg.name}: ${msg.message}\n${msg.stack}` : msg));
   process.exit(1);
 }
 

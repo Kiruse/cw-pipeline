@@ -1,7 +1,6 @@
-import { Asset, NetworkConfig } from '@apophis-sdk/core';
+import { NetworkConfig, networkFromRegistry } from '@apophis-sdk/core';
 import { fromHex } from '@apophis-sdk/core/utils.js';
 import { LocalSigner } from '@apophis-sdk/local-signer';
-import { ChainRegistryClient } from '@chain-registry/client';
 import { confirm, input } from '@inquirer/prompts';
 import type { Prompt } from '@inquirer/type';
 import { Option } from 'commander';
@@ -21,7 +20,7 @@ export const NetworkOption = (flags = '-n, --network') =>
   );
 
 export const MainnetOption = (flags = '--mainnet') =>
-  new Option(flags, 'Whether to use mainnet.');
+  new Option(flags, 'Whether to use mainnet.').default(false);
 
 export async function getNetworkConfig(options: { network?: string, mainnet?: boolean } = {}): Promise<NetworkConfig> {
   const network = await inquire(input, {
@@ -37,44 +36,7 @@ export async function getNetworkConfig(options: { network?: string, mainnet?: bo
     default: false,
   }, options);
 
-  const chainName = mainnet ? network : `testnets/${network}testnet`;
-  const client = new ChainRegistryClient({ chainNames: [chainName] });
-  await client.fetchUrls();
-
-  const chain = client.getChain(chainName.replace('testnets/', ''));
-  const assets = client.getChainAssetList(chainName.replace('testnets/', ''));
-  const feeToken = chain.fees?.fee_tokens?.[0];
-  const feeAssetRaw = assets.assets.find(asset => asset.base === feeToken?.denom);
-  if (!feeToken || !feeAssetRaw) throw new Error(`No fee asset found for ${chainName}`);
-
-  const feeAsset: Asset = {
-    denom: feeAssetRaw.base,
-    name: feeAssetRaw.symbol,
-    decimals: feeAssetRaw.denom_units.find(unit => unit.denom === feeAssetRaw.display)?.exponent ?? 0,
-  };
-
-  if (!feeToken.average_gas_price) throw new Error(`No average gas price found for ${chainName}`);
-
-  const result: NetworkConfig = {
-    name: chainName,
-    chainId: chain.chain_id!,
-    addressPrefix: chain.bech32_prefix!,
-    prettyName: chain.pretty_name!,
-    assets: [feeAsset],
-    gas: [{
-      asset: feeAsset,
-      avgPrice: feeToken.average_gas_price,
-      lowPrice: feeToken.low_gas_price ?? feeToken.average_gas_price,
-      highPrice: feeToken.high_gas_price ?? feeToken.average_gas_price,
-      minFee: feeToken.fixed_min_gas_price,
-    }],
-    slip44: chain.slip44,
-  };
-
-  if (!result.chainId || !result.addressPrefix)
-    throw new Error(`Failed to get chain data for ${chainName}`);
-
-  return result;
+  return await networkFromRegistry(mainnet ? network : `${network}testnet`);
 }
 
 export async function getSigner(): Promise<LocalSigner> {
@@ -139,12 +101,12 @@ export async function inquire<P extends Prompt<any, any>>(
   const cfg: any = promptConfig;
 
   if (cfg.name) {
-    if (options[cfg.name]) return options[cfg.name];
+    if (cfg.name in options) return options[cfg.name];
 
-    const envarName = recase('mixed', 'screamingSnake')(cfg.name);
-    if (process.env[`CWP_${envarName}`])
+    const envarName = 'CWP_' + recase('mixed', 'screamingSnake')(cfg.name);
+    if (envarName in process.env)
       //@ts-ignore
-      return process.env[`CWP_${envarName}`];
+      return process.env[envarName];
   }
 
   const lastInquire = cfg.name ? await getLastInquire(cfg.name) : undefined;

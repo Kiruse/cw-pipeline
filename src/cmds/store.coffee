@@ -1,7 +1,7 @@
 import { CosmWasm } from '@apophis-sdk/core/cosmwasm.js'
 import fs from 'fs/promises'
 import YAML from 'yaml'
-import { getNetworkConfig, NetworkOption, MainnetOption } from '~/prompting.js'
+import { getNetworkConfig, getSigner, NetworkOption, MainnetOption } from '~/prompting.js'
 import { error, log } from '~/utils'
 
 ###* @param {import('commander').Command} prog ###
@@ -12,8 +12,9 @@ export default (prog) ->
     .addOption NetworkOption()
     .addOption MainnetOption()
     .action (filepath, options) ->
-      network = await getNetworkConfig options.network, options.testnet
+      network = await getNetworkConfig options
       signer = await getSigner()
+      await signer.connect [network]
 
       unless filepath
         try
@@ -30,6 +31,7 @@ export default (prog) ->
 
       try
         await log network, "Storing code..."
+        console.log "Storing code on #{network.name} (#{network.chainId})..."
         codeId = await CosmWasm.store network, signer, bytecode
       catch err
         await log network, err
