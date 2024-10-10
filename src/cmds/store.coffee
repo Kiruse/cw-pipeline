@@ -1,3 +1,4 @@
+import { Cosmos } from '@apophis-sdk/core'
 import { CosmWasm } from '@apophis-sdk/core/cosmwasm.js'
 import fs from 'fs/promises'
 import YAML from 'yaml'
@@ -15,6 +16,9 @@ export default (prog) ->
       network = await getNetworkConfig options
       signer = await getSigner()
       await signer.connect [network]
+
+      console.log 'Connecting to chain...'
+      await Cosmos.ws(network).ready()
 
       unless filepath
         try
@@ -42,13 +46,14 @@ export default (prog) ->
       await pushCodeIds network, codeId
       process.exit 0
 
-pushCodeIds = (network, codeIds) ->
+###*
+# @param {import('@apophis-sdk/core').NetworkConfig} network
+# @param {number} codeIds
+###
+pushCodeIds = (network, codeId) ->
   await fs.appendFile 'codeIds.yml', '' # essentially touch
   saved = YAML.parse(await fs.readFile 'codeIds.yml', 'utf8') ? {}
-  prop = switch network
-    when 'mainnet' then 'terra2'
-    when 'testnet' then 'terra2-testnet'
-    else error 'Invalid network'
-  saved[prop] = saved[prop] ? []
-  saved[prop].push codeIds...
+  chainId = network.chainId
+  saved[chainId] = saved[chainId] ? []
+  saved[chainId].push codeId
   await fs.writeFile 'codeIds.yml', YAML.stringify(saved, indent: 2)

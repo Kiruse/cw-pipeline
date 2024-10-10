@@ -17,11 +17,13 @@ export default (prog) ->
       network = await getNetworkConfig options
       addr = options.contract ? await getLastContractAddr network
 
-      try
-        msg = YAML.parse (await fs.readFile options.msg ? 'msg.query.yml', 'utf8').trim()
-        await validateQueryMsg msg if options.validate
+      msgpath = options.msg ? 'msg.query.yml'
+
+      msg = try
+        YAML.parse((await fs.readFile msgpath, 'utf8').trim()) ? {}
       catch err
-        error "Failed to read and/or validate message:", err
+        error "Failed to read and/or validate #{msgpath}:", err
+      await validateQueryMsg msg if options.validate
 
       try
         await log network, "Querying contract at #{addr} with message:"

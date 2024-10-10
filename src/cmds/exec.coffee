@@ -16,13 +16,17 @@ export default (prog) ->
     .action (options) ->
       network = await getNetworkConfig options
       signer = await getSigner()
+      await signer.connect [network]
+
       addr = options.contract ? await getLastContractAddr network
 
-      try
-        msg = YAML.parse (await fs.readFile options.msg ? 'msg.exec.yml', 'utf8').trim()
-        await validateExecuteMsg msg if options.validate
+      msgpath = options.msg ? 'msg.exec.yml'
+
+      msg = try
+        YAML.parse((await fs.readFile msgpath, 'utf8').trim()) ? {}
       catch err
-        error "Failed to read and/or validate message:", err
+        error "Failed to read and/or validate #{msgpath}:", err
+      await validateExecuteMsg msg if options.validate
 
       funds = options.funds ? []
 
