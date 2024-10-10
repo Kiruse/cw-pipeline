@@ -89,3 +89,13 @@ export async function exec(cmd: string, args: string[], opts: { cwd?: string } =
     });
   });
 }
+
+export async function findProjectRoot(): Promise<string> {
+  let dir = process.cwd();
+  while (dir !== '/') {
+    if (await fs.stat(path.join(dir, 'Cargo.toml')).then(stat => stat.isFile()))
+      return dir;
+    dir = path.dirname(dir);
+  }
+  error('Could not find project root');
+}

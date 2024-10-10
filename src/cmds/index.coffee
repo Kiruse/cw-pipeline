@@ -5,6 +5,7 @@ import InitCommand from './init.coffee'
 import InstantiateCommand from './instantiate.coffee'
 import QueryCommand from './query.coffee'
 import SetupCommand from './setup.coffee'
+import ShowCommand from './show.coffee'
 import StoreCommand from './store.coffee'
 import TestCommand from './test.coffee'
 import WhoamiCommand from './whoami.coffee'
@@ -17,6 +18,7 @@ export commands = [
   InstantiateCommand
   QueryCommand
   SetupCommand
+  ShowCommand
   StoreCommand
   TestCommand
   WhoamiCommand

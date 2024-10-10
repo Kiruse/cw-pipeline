@@ -1,4 +1,4 @@
-import { NetworkConfig, networkFromRegistry } from '@apophis-sdk/core';
+import { connections, NetworkConfig, networkFromRegistry } from '@apophis-sdk/core';
 import { fromHex } from '@apophis-sdk/core/utils.js';
 import { LocalSigner } from '@apophis-sdk/local-signer';
 import { confirm, input } from '@inquirer/prompts';
@@ -9,6 +9,7 @@ import * as JsonSchema from 'jsonschema';
 import YAML from 'yaml';
 import { omit, TMPDIR } from './utils';
 import { recase } from '@kristiandupont/recase';
+import { loadConfig } from './config';
 
 type PromptValue<P extends Prompt<any, any>> = P extends Prompt<infer T, any> ? T : never;
 type PromptConfig<P extends Prompt<any, any>> = P extends Prompt<any, infer T> ? T : never;
@@ -36,7 +37,17 @@ export async function getNetworkConfig(options: { network?: string, mainnet?: bo
     default: false,
   }, options);
 
-  return await networkFromRegistry(mainnet ? network : `${network}testnet`);
+  const result = await networkFromRegistry(mainnet ? network : `${network}testnet`);
+
+  const cfg = await loadConfig();
+  const endpoints = cfg?.[result.name]?.endpoints;
+  if (endpoints) {
+    if (typeof endpoints.rest === 'string') connections.setRest(result, endpoints.rest);
+    if (typeof endpoints.rpc === 'string') connections.setRpc(result, endpoints.rpc);
+    if (typeof endpoints.ws === 'string') connections.setWs(result, endpoints.ws);
+  }
+
+  return result;
 }
 
 export async function getSigner(): Promise<LocalSigner> {
