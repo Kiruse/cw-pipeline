@@ -1,0 +1,4 @@
+preload = ['bun-coffeescript/register']
+
+[install.scopes]
+# "@apophis-sdk" = "http://localhost:4873/"

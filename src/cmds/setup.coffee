@@ -1,6 +1,6 @@
 import * as childProcess from 'child_process'
 import * as semver from 'semver'
-import { error, exec, spawn } from 'src/utils'
+import { error, exec, spawn } from '~/utils'
 
 ###* @param {import('commander').Command} prog ###
 export default (prog) ->

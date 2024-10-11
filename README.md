@@ -6,7 +6,9 @@
 
 # Roadmap
 - [x] Contract instantiation
-- [/] DevEnv setup (WIP)
-- [/] Project scaffolding (WIP)
-- [ ] `schema generate` subcommand. Generate the `src/bin/schema.rs` file based on the contents of the repository. Then generate the TypeScript type declarations from schemas.
-- [ ] Generalize for different chains. Currently only built & tested on Terra, though other chains should work, too, but needs testing.
+- [x] Project scaffolding
+- [ ] Multi-chain support (Chain Registry) (WIP)
+- [ ] Multi-chain support (Custom)
+- [ ] DevEnv setup (WIP)
+- [ ] Generate schemas as part of the production build process.
+- [ ] Secret storage.

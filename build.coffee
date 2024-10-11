@@ -20,6 +20,7 @@ output = await Bun.build
   define:
     'process.env.VERSION': JSON.stringify VERSION
   minify: true
+  sourcemap: 'linked'
   outdir: 'build'
 unless output.success
   console.error YAML.stringify output.logs

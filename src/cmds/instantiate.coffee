@@ -1,82 +1,76 @@
-import { loadConfig } from 'src/config'
-import { MsgInstantiateContract } from '@terra-money/feather.js'
+import { Cosmos } from '@apophis-sdk/core'
+import { CosmWasm } from '@apophis-sdk/core/cosmwasm.js'
 import { Option } from 'commander'
 import fs from 'fs/promises'
 import YAML from 'yaml'
-import { error, getChainID, getLCD, getNetwork, NetworkOption, logResult, getLogs, getBechPrefix } from '../utils'
+import { getNetworkConfig, getSigner, NetworkOption, MainnetOption, validateInitMsg, parseFunds, FundsOption } from '~/prompting.js'
+import { error, log } from '~/utils.js'
 
 ###* @param {import('commander').Command} prog ###
 export default (prog) ->
   prog.command 'instantiate'
     .description 'Instantiate a Smart Contract on the blockchain.'
+    .argument '<label>', 'Label for the contract. For every user and code ID, this must be unique. For the sake of your fellow developers, please choose a meaningful label.'
     .argument '[codeId]', 'Code ID of the Smart Contract to instantiate. If omitted, takes the last code ID from codeIds.txt. Fails if none such.'
-    .option '-m, --init-msg <path>', 'Path to the YAML file containing the init message. When omitted, prompts for input based on the contract\'s schema.'
+    .option '-m, --msg <path>', 'Path to the YAML file containing the init message. Defaults to msg.init.yml in the current directory.'
+    .option '--no-validate', 'Do not validate the init message against the schema. Defaults to validating.'
     .addOption(
       new Option '-l, --label <label>', 'Label for the contract. Defaults to a generic label, but I recommend setting one for legibility.'
         .default 'Generic Contract'
     )
     .addOption NetworkOption()
-    .action (codeId, options) ->
-      {network} = cfg = await loadConfig options
+    .addOption MainnetOption()
+    .addOption FundsOption()
+    .action (label, codeId, options) ->
+      network = await getNetworkConfig options
+      signer = await getSigner()
+      await signer.connect [network]
+
+      console.log 'Connecting to chain...'
+      await Cosmos.ws(network).ready()
+
+      msgpath = options.msg ? 'msg.init.yml'
 
       codeId = await getLastCodeId network unless codeId
-      codeId = Number codeId
-      try
-        initMsg = if options.initMsg
-          YAML.parse (await fs.readFile options.initMsg, 'utf8').trim()
-        else
-          await inquireInitMsg()
-      catch
-        error 'Failed to read init message.'
-
-      chainId = getChainID network
-      lcd = getLCD network
-      wallet = lcd.wallet await cfg.getMnemonicKey()
-      addr = wallet.key.accAddress getBechPrefix network
-
-      try
-        tx = await wallet.createAndSignTx
-          msgs: [new MsgInstantiateContract addr, addr, codeId, initMsg, [], options.label]
-          chainID: chainId
+      codeId = BigInt codeId
+      msg = try
+        YAML.parse((await fs.readFile msgpath, 'utf8').trim()) ? {}
       catch err
-        console.error "#{err.name}: #{err.message}"
-        if err.isAxiosError
-          console.error YAML.stringify err.response.data
-        process.exit 1
+        error "Failed to read #{msgpath}:", err
+      await validateInitMsg msg if options.validate
 
-      result = await lcd.tx.broadcast tx, chainId
-      error 'Error:', result.raw_log if result.code
+      funds = parseFunds options.funds ? []
+      admin = options.admin ? signer.address(network)
 
-      await logResult result, network
+      try
+        await log network, "Instantiating contract..."
+        addr = await CosmWasm.instantiate { network, signer, codeId, label, admin, msg: CosmWasm.toBinary(msg), funds }
+        await pushContractAddr network, codeId, addr
+        console.log "Contract address: #{addr}"
+        await log network, "Instantiated contract at #{addr}"
+      catch err
+        await log network, err
+        error 'Failed to instantiate contract:', err
+      process.exit 0
 
-      logs = getLogs result
-      error 'No logs' if logs.length is 0
-      addrs = logs[0].eventsByType.instantiate?._contract_address
-      error 'No contract addresses found' unless addrs?.length
-
-      await pushContractAddrs network, codeId, addrs
-
-      console.log "Contract addresses: #{addrs.join ', '}"
-
+###* @param {import('@apophis-sdk/core').NetworkConfig} network ###
 getLastCodeId = (network) ->
   try
     doc = YAML.parse (await fs.readFile 'codeIds.yml', 'utf8').trim()
-    codeIds = doc[getNetwork network]
+    codeIds = doc[network.name]
     error 'No code IDs found' unless codeIds?.length
     BigInt codeIds[codeIds.length - 1]
   catch
     error 'Failed to read code IDs. Ensure "codeIds.yml" exists and is valid, or manually specify the code ID.'
 
-inquireInitMsg = ->
-  error 'message helper not yet implemented'
-
-pushContractAddrs = (network, codeId, addrs) ->
+###*
+# @param {import('@apophis-sdk/core').NetworkConfig} network
+# @param {number} codeId
+# @param {string} address
+###
+pushContractAddr = (network, codeId, address) ->
   await fs.appendFile 'addrs.yml', '' # essentially touch
   saved = YAML.parse(await fs.readFile 'addrs.yml', 'utf8') ? {}
-  network = getNetwork network
-  saved[network] = saved[network] ? []
-  for addr in addrs
-    saved[network].push
-      address: addr
-      codeId: codeId
+  saved[network.name] = saved[network.name] ? []
+  saved[network.name].push { address, codeId }
   await fs.writeFile 'addrs.yml', YAML.stringify saved, indent: 2

@@ -1,8 +1,9 @@
-import { loadConfig } from 'src/config'
-import { MsgStoreCode } from '@terra-money/feather.js'
+import { Cosmos } from '@apophis-sdk/core'
+import { CosmWasm } from '@apophis-sdk/core/cosmwasm.js'
 import fs from 'fs/promises'
 import YAML from 'yaml'
-import { error, getChainID, getLCD, getLogs, NetworkOption, logResult, getBechPrefix } from '../utils'
+import { getNetworkConfig, getSigner, NetworkOption, MainnetOption } from '~/prompting.js'
+import { error, log } from '~/utils'
 
 ###* @param {import('commander').Command} prog ###
 export default (prog) ->
@@ -10,8 +11,15 @@ export default (prog) ->
     .argument '[filepath]', 'Path to the WASM file to store. Defaults to the only WASM file in the artifacts directory.'
     .description 'Store a Smart Contract on the blockchain.'
     .addOption NetworkOption()
+    .addOption MainnetOption()
     .action (filepath, options) ->
-      {network} = cfg = await loadConfig options
+      network = await getNetworkConfig options
+      signer = await getSigner()
+      await signer.connect [network]
+
+      console.log 'Connecting to chain...'
+      await Cosmos.ws(network).ready()
+
       unless filepath
         try
           candidates = (await fs.readdir 'artifacts', withFileTypes: true)
@@ -23,45 +31,29 @@ export default (prog) ->
         catch
           error 'Failed to read WASM from artifacts.'
 
-      chainId = getChainID network
-      lcd = getLCD network
-      wallet = lcd.wallet await cfg.getMnemonicKey()
-      addr = wallet.key.accAddress getBechPrefix network
-      bytecode = (await fs.readFile(filepath)).toString('base64')
+      bytecode = Uint8Array.from(await fs.readFile(filepath))
 
       try
-        tx = await wallet.createAndSignTx
-          msgs: [new MsgStoreCode addr, bytecode]
-          chainID: chainId
+        await log network, "Storing code..."
+        console.log "Storing code on #{network.name} (#{network.chainId})..."
+        codeId = await CosmWasm.store network, signer, bytecode
       catch err
-        if err.isAxiosError
-          console.error "AxiosError #{err.response.status}"
-          console.error YAML.stringify err.response.data, indent: 2
-        else
-          console.error "#{err.name}: #{err.message}"
-        error 'Failed to create transaction.'
+        await log network, err
+        error "Failed to store code on-chain:", err
 
-      result = await lcd.tx.broadcast tx, chainId
-      error 'Error:', result.raw_log if result.code
+      console.log "Code ID: #{codeId}"
+      await log network, "codeId: #{codeId}"
+      await pushCodeIds network, codeId
+      process.exit 0
 
-      await logResult result, network
-
-      logs = getLogs result
-      error 'No logs' if logs.length is 0
-      codeIds = logs[0].eventsByType.store_code?.code_id?.map (scode) -> BigInt scode
-      error 'No code IDs found' unless codeIds?.length
-
-      await pushCodeIds network, codeIds
-
-      console.log "Code IDs: #{codeIds.join ', '}"
-
-pushCodeIds = (network, codeIds) ->
+###*
+# @param {import('@apophis-sdk/core').NetworkConfig} network
+# @param {number} codeIds
+###
+pushCodeIds = (network, codeId) ->
   await fs.appendFile 'codeIds.yml', '' # essentially touch
   saved = YAML.parse(await fs.readFile 'codeIds.yml', 'utf8') ? {}
-  prop = switch network
-    when 'mainnet' then 'terra2'
-    when 'testnet' then 'terra2-testnet'
-    else error 'Invalid network'
-  saved[prop] = saved[prop] ? []
-  saved[prop].push codeIds...
+  chainId = network.chainId
+  saved[chainId] = saved[chainId] ? []
+  saved[chainId].push codeId
   await fs.writeFile 'codeIds.yml', YAML.stringify(saved, indent: 2)

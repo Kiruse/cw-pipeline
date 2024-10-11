@@ -1,51 +1,43 @@
-import { MsgExecuteContract } from '@terra-money/feather.js'
-import { Option } from 'commander'
+import { CosmWasm } from '@apophis-sdk/core/cosmwasm.js'
 import fs from 'fs/promises'
 import YAML from 'yaml'
-import { loadConfig } from 'src/config'
-import {
-  error,
-  getBechPrefix,
-  getChainID,
-  getLastContractAddr,
-  getLCD,
-  logResult,
-  NetworkOption,
-  validateExecuteMsg,
-} from 'src/utils'
+import { error, getLastContractAddr, log } from '~/utils'
+import { getNetworkConfig, getSigner, NetworkOption, MainnetOption, FundsOption, parseFunds, validateExecuteMsg } from '~/prompting'
 
 ###* @param {import('commander').Command} prog ###
 export default (prog) ->
   prog.command 'exec'
     .description 'Execute a Smart Contract on the blockchain.'
-    .argument '<msg>', 'Path to the YAML file containing the message to execute.'
     .addOption NetworkOption()
+    .addOption MainnetOption()
+    .addOption FundsOption()
     .option '-c, --contract <address>', 'Address of the contract to execute. Defaults to the last contract address in addrs.yml.'
-    .addOption (
-      new Option '-g, --gas <amount>', 'Amount of gas to use. Defaults to 300000.'
-        .default 'auto'
-    )
-    .action (msgpath, options) ->
-      {network} = cfg = await loadConfig options
+    .option '-m, --msg <path>', 'Path to the YAML file containing the execute message. Defaults to msg.exec.yml in the current directory.'
+    .option '--no-validate', 'Whether to skip message validation. Defaults to validating.'
+    .action (options) ->
+      network = await getNetworkConfig options
+      signer = await getSigner()
+      await signer.connect [network]
+
       addr = options.contract ? await getLastContractAddr network
 
-      chainId = getChainID network
-      lcd = getLCD network
-      wallet = lcd.wallet await cfg.getMnemonicKey()
-      sender = wallet.key.accAddress getBechPrefix network
+      msgpath = options.msg ? 'msg.exec.yml'
 
-      msg = YAML.parse await fs.readFile msgpath, 'utf8'
-      await validateExecuteMsg msg
+      msg = try
+        YAML.parse((await fs.readFile msgpath, 'utf8').trim()) ? {}
+      catch err
+        error "Failed to read and/or validate #{msgpath}:", err
+      await validateExecuteMsg msg if options.validate
+
+      funds = parseFunds options.funds ? []
 
       try
-        tx = await wallet.createAndSignTx
-          msgs: [new MsgExecuteContract sender, addr, msg]
-          chainID: chainId
-          gas: options.gas
+        await log network, "Executing contract at #{addr} with message:"
+        await log network, msg
+        result = await CosmWasm.execute network, signer, addr, CosmWasm.toBinary(msg), funds
+        await log network, result
       catch err
-        error "#{err.name}: #{err.message}"
-
-      result = await lcd.tx.broadcast tx, chainId
-      error 'Error:', result.raw_log if result.code
-      await logResult result, network
-      console.log 'Success! Check cw-pipeline.log for details.'
+        await log network, err
+        error "Failed to execute contract:", err
+      console.log 'Success! Details have been logged to cw-pipeline.log.'
+      process.exit 0
