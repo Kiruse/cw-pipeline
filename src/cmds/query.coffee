@@ -2,7 +2,7 @@ import { CosmWasm } from '@apophis-sdk/core/cosmwasm.js'
 import fs from 'fs/promises'
 import YAML from 'yaml'
 import { getNetworkConfig, NetworkOption, MainnetOption, validateQueryMsg } from '~/prompting.js'
-import { error, getLastContractAddr } from '~/utils'
+import { error, getLastContractAddr, log } from '~/utils'
 
 ###* @param {import('commander').Command} prog ###
 export default (prog) ->

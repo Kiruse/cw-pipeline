@@ -22,7 +22,7 @@ export const NetworkOption = (flags = '-n, --network') =>
   );
 
 export const MainnetOption = (flags = '--mainnet') =>
-  new Option(flags, 'Whether to use mainnet.').default(false);
+  new Option(flags, 'Whether to use mainnet.').default(['1', 'true'].includes(process.env.CWP_MAINNET!));
 
 export const FundsOption = (flags = '--funds <amounts...>') =>
   new Option(flags, 'Funds to send with the transaction. Defaults to none. Currently requires base denom w/o decimals, e.g. 1untrn.');

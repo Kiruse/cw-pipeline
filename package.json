@@ -9,8 +9,8 @@
   },
   "bin": "./bin/cw-pipeline",
   "dependencies": {
-    "@apophis-sdk/core": "^0.0.7-fix.1",
-    "@apophis-sdk/local-signer": "^0.0.7-fix.1",
+    "@apophis-sdk/core": "^0.0.7-fix.2",
+    "@apophis-sdk/local-signer": "^0.0.7-fix.2",
     "@inquirer/prompts": "^7.0.0",
     "@kiruse/typed-events": "^1.0.1",
     "@kristiandupont/recase": "^1.3.1",
