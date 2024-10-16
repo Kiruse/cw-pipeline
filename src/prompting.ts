@@ -109,6 +109,7 @@ async function getLastInquire(name: string, defaultValue?: string): Promise<stri
 
 async function saveLastInquire(key: string, value: any) {
   lastInquire[key] = value;
+  await fs.mkdir(`${TMPDIR}`, { recursive: true });
   await fs.writeFile(`${TMPDIR}/last-inquire.yml`, YAML.stringify(lastInquire, {indent: 2}));
 }
 
