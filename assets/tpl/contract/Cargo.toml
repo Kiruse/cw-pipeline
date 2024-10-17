@@ -1,0 +1,21 @@
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[package]
+name = "{{project-name}}"
+version = "0.1.0"
+authors = ["{{author}}"]
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+# for more explicit tests, cargo test --features=backtraces
+backtraces = ["cosmwasm-std/backtraces"]
+# use library feature to disable all instantiate/execute/query exports
+library = []
+
+[dependencies]
+{{project-deps}}
+
+[dev-dependencies]
+cw-multi-test = "0.17"

@@ -56,18 +56,6 @@ export function omit<T, K extends keyof T>(obj: T, ...keys: K[]): Omit<T, K> {
   return result;
 }
 
-export async function getLastContractAddr(network: NetworkConfig): Promise<string> {
-  try {
-    const doc = YAML.parse(await fs.readFile('addrs.yml', 'utf8'));
-    const addrs = doc?.[network.name];
-    if (!addrs?.length)
-      error(`No contract addresses found for ${network.name}`);
-    return addrs[addrs.length - 1]?.address
-  } catch (err: any) {
-    error(`Error reading addrs.yml: ${err.name}: ${err.message}`);
-  }
-}
-
 export async function spawn(cmd: string, args: string[], opts: { cwd?: string } = {}) {
   const { spawn } = await import('child_process');
   return new Promise<void>((resolve, reject) => {
@@ -88,14 +76,4 @@ export async function exec(cmd: string, args: string[], opts: { cwd?: string } =
       else resolve({stdout, stderr});
     });
   });
-}
-
-export async function findProjectRoot(): Promise<string> {
-  let dir = process.cwd();
-  while (dir !== '/') {
-    if (await fs.stat(path.join(dir, 'Cargo.toml')).then(stat => stat.isFile()))
-      return dir;
-    dir = path.dirname(dir);
-  }
-  error('Could not find project root');
 }

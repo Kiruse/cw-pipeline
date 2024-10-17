@@ -8,11 +8,11 @@ export default (prog) ->
     .description 'Show information about things.'
   cmd.command 'network'
     .description 'Show information about a network.'
-    .addOption NetworkOption()
+    .argument '[network]', 'The network to show information about. Prompts if not specified.'
     .addOption MainnetOption()
     .option '--json', 'Output as JSON. Useful for post-processing with tools like `jq`.', false
-    .action (opts) ->
-      network = await getNetworkConfig opts
+    .action (network, opts) ->
+      network = await getNetworkConfig { opts..., network }
       console.log network
       process.exit 0
   cmd.command 'tx'

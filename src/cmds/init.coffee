@@ -1,72 +1,80 @@
-import { confirm, input } from '@inquirer/prompts'
+import { confirm, input, select } from '@inquirer/prompts'
 import { $ as $$ } from 'bun'
 import fs from 'fs/promises'
 import os from 'os'
 import path from 'path'
 import { inquire } from '~/prompting'
-import { error, spawn, ASSETSDIR } from '~/utils'
+import { copy, move, substitutePlaceholders, getSection, getWorkspaceDeps } from '~/templating'
+import { ASSETSDIR } from '~/utils'
 
 ###* @param {import('commander').Command} prog ###
 export default (prog) ->
   prog.command 'init'
     .description 'Initialize a new CosmWasm project. Assumes tools were already installed with `cw-pipeline setup`.'
-    .action ->
+    .argument '[name]', 'Name of the project'
+    .option '--target <target>', 'Target directory'
+    .action (name, opts) ->
       #region inquire
       name = await inquire input,
+        name: 'name'
+        volatile: true
         message: 'What is the name of your project?'
         default: -> process.cwd().replace(/\\/g, /\//).split('/').pop()
+        options: { opts..., name }
       target = await inquire input,
+        name: 'target'
+        volatile: true
         message: 'Where would you like to setup your new project?'
         default: "./#{name}"
+        options: opts
       author = await inquire input,
         name: 'author'
         message: 'Who is the author of this project?'
         default: -> os.userInfo().username
+        options: opts
       monorepo = await inquire confirm,
         name: 'monorepo'
         message: 'Would you like to setup a monorepo?'
         default: -> false
-      cw1_4 = await inquire confirm,
-        name: 'cw-1.4'
-        message: 'Does your target chain support CosmWasm 1.4?'
-        default: -> false
+        options: opts
+      cwFeat = await inquire select,
+        name: 'cw-version'
+        message: 'Which CosmWasm version are you targeting? This depends on your target chain(s).'
+        default: '1.4'
+        choices: [
+          { name: 'CosmWasm 1.3', value: '1.3' }
+          { name: 'CosmWasm 1.4', value: '1.4' }
+          { name: 'CosmWasm 2.0', value: '2.0' }
+          { name: 'CosmWasm 2.1', value: '2.1' }
+          { name: 'CosmWasm 2.2', value: '2.2' }
+        ]
+        options: opts
       #endregion inquire
 
-      if monorepo then error 'Monorepo support is not yet implemented.'
-
-      #region copy
       target = path.resolve target
-      tplFiles = await getTemplateFiles()
-      copyFiles = tplFiles.filter (file) -> not file.match /^_.*?\//
-      contractFiles = tplFiles.filter (file) -> file.startsWith '_contract/'
-        .map (file) -> file.replace /^_contract\//, ''
 
-      await mkdirs Array.from(new Set copyFiles.map (file) -> "#{target}/#{path.dirname file}")
-      await Promise.all copyFiles.map (file) ->
-        await fs.copyFile "#{ASSETSDIR}/tpl/#{file}", "#{target}/#{file}"
+      #region update Cargo.toml
+      cargo = await fs.readFile "#{ASSETSDIR}/tpl/monorepo/Cargo.toml", 'utf8'
+      deps = if monorepo then getWorkspaceDeps(cargo) else getSection(cargo, 'workspace.dependencies')
+      if monorepo
+        await copy "#{ASSETSDIR}/tpl/monorepo", target
+        await copy "#{ASSETSDIR}/tpl/contract", "#{target}/contracts/#{name}"
+      else
+        await copy "#{ASSETSDIR}/tpl/contract", target
+      await copy "#{ASSETSDIR}/tpl/root", target
+      #endregion update Cargo.toml
 
-      copyContractFiles = (dir) ->
-        await mkdirs Array.from(new Set contractFiles.map (file) -> "#{dir}/#{path.dirname file}")
-        await Promise.all contractFiles.map (file) ->
-          await fs.copyFile "#{ASSETSDIR}/tpl/_contract/#{file}", "#{dir}/#{file}"
-      await copyContractFiles if monorepo then "#{target}/contracts/#{name}" else "#{target}/src"
-      #endregion copy
-
-      #region replace Cargo.toml placeholders
-      cargoToml = await fs.readFile "#{target}/Cargo.toml", 'utf8'
-      cargoToml = cargoToml.replace /\{\{project-name\}\}/g, name
-      cargoToml = cargoToml.replace /\{\{authors\}\}/g, author
-      if cw1_4
-        cargoToml = cargoToml.replace 'features = ["cosmwasm_1_3"]', 'features = ["cosmwasm_1_4"]'
-      # TODO: monorepos aka workspaces
-      await fs.writeFile "#{target}/Cargo.toml", cargoToml
-      #endregion replace Cargo.toml placeholders
-
-      #region replace Readme placeholders
-      readme = await fs.readFile "#{target}/README.md", 'utf8'
-      readme = readme.replace /\{\{project-name\}\}/g, name
-      await fs.writeFile "#{target}/README.md", readme
-      #endregion replace Readme placeholders
+      #region replace placeholders
+      await substitutePlaceholders target, {'project-deps': deps} # these contain other placeholders
+      await substitutePlaceholders target,
+        'project-name': name
+        author: author
+        'cw-version': (-> cwFeat.match(/^(\d+)\./)?[1] ? '1.5')()
+        'cw-features': "cosmwasm_#{cwFeat.replace '.', '_'}"
+      unless monorepo
+        profiles = getSection cargo, '[profile.release]'
+        await fs.appendFile "#{target}/Cargo.toml", "\n[profile.release]\n" + profiles
+      #endregion replace placeholders
 
       try
         await $$"cd #{target} && git init"
@@ -75,16 +83,3 @@ export default (prog) ->
       catch
         console.error "Failed to fully initialize git repository in #{target}."
       console.log 'Done.'
-
-mkdirs = (dirs) -> await Promise.all dirs.map (dir) -> await fs.mkdir dir, recursive: true
-getTemplateFiles = ->
-  files = []
-  recurse = (dir) ->
-    entries = await fs.readdir dir, withFileTypes: true
-    for entry in entries
-      if entry.isDirectory()
-        await recurse "#{dir}/#{entry.name}"
-      else
-        files.push "#{dir}/#{entry.name}"
-  await recurse ASSETSDIR
-  files.map (file) -> file.replace "#{ASSETSDIR}/tpl/", ''

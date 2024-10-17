@@ -2,9 +2,11 @@ import fs from 'fs/promises';
 import { homedir } from 'os';
 import path from 'path';
 import YAML from 'yaml';
-import { findProjectRoot } from './utils';
+import { Project } from './project';
 
-export async function loadConfig(): Promise<any> {
+export async function loadConfig(proj?: Project): Promise<any> {
+  proj ??= await Project.find().catch(() => undefined);
+
   const tryReadFile = async (filepath: string) => {
     try {
       if (!(await fs.stat(filepath)).isFile())
@@ -15,11 +17,10 @@ export async function loadConfig(): Promise<any> {
     }
   };
 
-  await tryReadFile(path.join(homedir(), '.cw-pipeline', 'config.yml'));
-
-  const [cfg1, cfg2] = await Promise.all([
-    tryReadFile(path.join(homedir(), '.cw-pipeline', 'config.yml')),
-    tryReadFile(path.join(await findProjectRoot(), 'cwp.yml')),
+  const cfgs = await Promise.all([
+    tryReadFile(path.join(homedir(), '.cw-pipeline', 'config.yml')).catch(() => ({})),
+    proj ? tryReadFile(path.join(proj.root, 'cwp.yml')).catch(() => ({})) : {},
+    proj && proj.project ? tryReadFile(path.join(proj.projectPath, 'cwp.yml')).catch(() => ({})) : {},
   ]);
-  return Object.assign({}, cfg1, cfg2);
+  return Object.assign({}, ...cfgs);
 }

@@ -2,14 +2,15 @@ import { connections, Cosmos, NetworkConfig, networkFromRegistry } from '@apophi
 import { Coin } from '@apophis-sdk/core/types.sdk.js';
 import { fromHex } from '@apophis-sdk/core/utils.js';
 import { LocalSigner } from '@apophis-sdk/local-signer';
-import { confirm, input } from '@inquirer/prompts';
+import { confirm, editor, input } from '@inquirer/prompts';
 import type { Prompt } from '@inquirer/type';
+import { recase } from '@kristiandupont/recase';
+import { bech32 } from '@scure/base';
 import { Option } from 'commander';
 import fs from 'fs/promises';
 import * as JsonSchema from 'jsonschema';
 import YAML from 'yaml';
 import { omit, TMPDIR } from './utils';
-import { recase } from '@kristiandupont/recase';
 import { loadConfig } from './config';
 
 type PromptValue<P extends Prompt<any, any>> = P extends Prompt<infer T, any> ? T : never;
@@ -41,7 +42,7 @@ export async function getNetworkConfig(options: { network?: string, mainnet?: bo
     message: 'Network name as defined in the chain registry',
     default: 'neutron',
     validate: (input: string) => input?.trim().length > 0,
-  });
+  }, options);
 
   const mainnet = await inquire(confirm, {
     name: 'mainnet',
@@ -89,10 +90,6 @@ export async function validateJson(msg: any, schemaPath: string): Promise<void> 
   }
 }
 
-export const validateInitMsg = (msg: any) => validateJson(msg, 'schema/raw/instantiate.json');
-export const validateExecuteMsg = (msg: any) => validateJson(msg, 'schema/raw/execute.json');
-export const validateQueryMsg = (msg: any) => validateJson(msg, 'schema/raw/query.json');
-
 var lastInquire: any;
 async function getLastInquire(name: string, defaultValue?: string): Promise<string | undefined> {
   if (!lastInquire) {
@@ -119,13 +116,14 @@ async function saveLastInquire(key: string, value: any) {
  */
 export async function inquire<P extends Prompt<any, any>>(
   prompt: P,
-  promptConfig: PromptConfig<P> & { name?: string },
-  options: Record<string, any> = {},
+  promptConfig: PromptConfig<P> & { name?: string, volatile?: boolean, options?: Record<string, any> },
+  options?: Record<string, any>,
 ): Promise<PromptValue<P>> {
   const cfg: any = promptConfig;
+  const opts = options ?? promptConfig.options ?? {};
 
   if (cfg.name) {
-    if (cfg.name in options) return options[cfg.name];
+    if (opts[cfg.name] !== undefined) return opts[cfg.name];
 
     const envarName = 'CWP_' + recase('mixed', 'screamingSnake')(cfg.name);
     if (envarName in process.env)
@@ -142,6 +140,25 @@ export async function inquire<P extends Prompt<any, any>>(
     default: lastInquire ?? defaultValue,
   });
 
-  if (cfg.name) await saveLastInquire(cfg.name, result);
+  if (cfg.name && !cfg.volatile) await saveLastInquire(cfg.name, result);
   return result;
+}
+
+export async function inquireEditor(
+  promptConfig: PromptConfig<typeof editor> & { name?: string, volatile?: boolean, options?: Record<string, any> },
+  options?: Record<string, any>,
+): Promise<string> {
+  process.env.EDITOR ??= 'nano';
+  if (process.env.EDITOR === 'code')
+    process.env.EDITOR = 'code --wait';
+  return await inquire(editor, promptConfig, options);
+}
+
+export function isAddress(input: string) {
+  try {
+    bech32.decode(input as any);
+    return true;
+  } catch {
+    return false;
+  }
 }

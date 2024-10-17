@@ -1,11 +1,9 @@
 import { commands } from './cmds/index.coffee'
 import { Command } from 'commander'
-
-unless process.env.VERSION
-  throw Error 'VERSION environment variable not set.'
+import { VERSION } from '../env.coffee'
 
 program = new Command 'cw-pipeline'
-program.version process.env.VERSION
+program.version VERSION
 
 cmd program for cmd in commands
 

@@ -1,8 +1,10 @@
+import { isFile } from '~/templating'
 import { CosmWasm } from '@apophis-sdk/core/cosmwasm.js'
 import fs from 'fs/promises'
 import YAML from 'yaml'
-import { error, getLastContractAddr, log } from '~/utils'
-import { getNetworkConfig, getSigner, NetworkOption, MainnetOption, FundsOption, parseFunds, validateExecuteMsg } from '~/prompting'
+import { Project } from '~/project'
+import { getNetworkConfig, getSigner, NetworkOption, MainnetOption, FundsOption, parseFunds, isAddress, inquireEditor } from '~/prompting'
+import { error, log } from '~/utils'
 
 ###* @param {import('commander').Command} prog ###
 export default (prog) ->
@@ -16,28 +18,53 @@ export default (prog) ->
     .option '--no-validate', 'Whether to skip message validation. Defaults to validating.'
     .action (options) ->
       network = await getNetworkConfig options
-      signer = await getSigner()
-      await signer.connect [network]
+      proj = await Project.find().catch(=>)
 
-      addr = options.contract ? await getLastContractAddr network
+      # if an address, regardless of monorepo
+      return await execAddress { proj, network, options... } if isAddress options.contract
+      error 'Must specify a contract address when not in a project' unless proj
 
-      msgpath = options.msg ? 'msg.exec.yml'
+      if proj.isMonorepo and not options.contract
+        options.contract = await inquire select,
+          name: 'contract'
+          message: 'Choose a contract to execute'
+          choices: await proj.getContractNames()
+      await proj.activate options.contract if options.contract
 
-      msg = try
-        YAML.parse((await fs.readFile msgpath, 'utf8').trim()) ? {}
-      catch err
-        error "Failed to read and/or validate #{msgpath}:", err
-      await validateExecuteMsg msg if options.validate
+      addr = options.contract ? await proj.getLastContractAddr(network).catch(=>)
+      unless addr
+        error "No recent address found. Please specify a contract address or deploy a contract first."
+      await execAddress { proj, network, options..., contract: addr }
 
-      funds = parseFunds options.funds ? []
+execAddress = ({ proj, network, options... }) ->
+  signer = await getSigner()
+  await signer.connect [network]
 
-      try
-        await log network, "Executing contract at #{addr} with message:"
-        await log network, msg
-        result = await CosmWasm.execute network, signer, addr, CosmWasm.toBinary(msg), funds
-        await log network, result
-      catch err
-        await log network, err
-        error "Failed to execute contract:", err
-      console.log 'Success! Details have been logged to cw-pipeline.log.'
-      process.exit 0
+  msgpath = options.msg ? 'msg.exec.yml'
+  msgraw = if await isFile msgpath
+    await fs.readFile msgpath, 'utf8'
+  else
+    await inquireEditor
+      name: "#{path.basename proj.root}.msg.exec"
+      message: 'Enter your execute message in YAML'
+      default: 'enter: yaml'
+
+  msg = try
+    YAML.parse(msgraw.trim()) ? {}
+  catch err
+    error "Failed to read YAML:", err
+  await proj.validateMsg msg, 'execute' if options.validate
+
+  funds = parseFunds options.funds ? []
+
+  try
+    await log network, "Executing contract at #{options.contract} with message:"
+    await log network, msg
+
+    result = await CosmWasm.execute network, signer, options.contract, CosmWasm.toBinary(msg), funds
+    await log network, result
+    console.log 'Success! Details have been logged to cw-pipeline.log.'
+    process.exit 0
+  catch err
+    await log network, err
+    error "Failed to execute contract:", err

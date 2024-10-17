@@ -1,35 +1,49 @@
+import { select } from '@inquirer/prompts'
+import { getFiles, isFile } from '~/templating'
 import { Cosmos } from '@apophis-sdk/core'
 import { CosmWasm } from '@apophis-sdk/core/cosmwasm.js'
 import fs from 'fs/promises'
-import YAML from 'yaml'
-import { getNetworkConfig, getSigner, NetworkOption, MainnetOption } from '~/prompting.js'
+import path from 'path'
+import { Project } from '~/project'
+import { getNetworkConfig, getSigner, NetworkOption, MainnetOption, inquire } from '~/prompting.js'
 import { error, log } from '~/utils'
 
 ###* @param {import('commander').Command} prog ###
 export default (prog) ->
   prog.command 'store'
-    .argument '[filepath]', 'Path to the WASM file to store. Defaults to the only WASM file in the artifacts directory.'
+    .argument '[contract]', 'Path to the WASM file to store. Defaults to the only WASM file in the artifacts directory. Can also be a contract name in a monorepo.'
     .description 'Store a Smart Contract on the blockchain.'
     .addOption NetworkOption()
     .addOption MainnetOption()
-    .action (filepath, options) ->
+    .action (contract, options) ->
       network = await getNetworkConfig options
       signer = await getSigner()
       await signer.connect [network]
+      proj = await Project.find().catch(=>)
 
       console.log 'Connecting to chain...'
       await Cosmos.ws(network).ready()
 
-      unless filepath
-        try
-          candidates = (await fs.readdir 'artifacts', withFileTypes: true)
-            .filter (entry) -> entry.isFile() and entry.name.endsWith '.wasm'
-            .map (entry) -> entry.name
-          error 'No WASM files found in artifacts directory.' if candidates.length is 0
-          error 'Multiple WASM files found in artifacts directory. Please specify one.' if candidates.length > 1
-          filepath = "artifacts/#{candidates[0]}"
-        catch
-          error 'Failed to read WASM from artifacts.'
+      filepath = if await isFile contract
+        contract
+      else if proj
+        await proj.activate contract
+        if proj.isMonorepo
+          unless proj.project
+            choice = await inquire select,
+              name: 'contract'
+              message: 'Select a contract to upload & store'
+              choices: await proj.getContractNames()
+            await proj.activate choice
+          path.join proj.projectRoot, 'artifacts', "#{contract}.wasm"
+        else
+          files = (await getFiles 'artifacts').filter (f) -> f.endsWith '.wasm'
+          error 'No WASM files found in artifacts directory.' if files.length is 0
+          error 'Multiple WASM files found in artifacts directory. Please specify one.' if files.length > 1
+          files[0]
+      else
+        error "Must specify a WASM file when not in a Rust project" unless contract
+        error "Not in a Rust project, and no WASM file found at #{path.resolve contract}"
 
       bytecode = Uint8Array.from(await fs.readFile(filepath))
 
@@ -43,17 +57,5 @@ export default (prog) ->
 
       console.log "Code ID: #{codeId}"
       await log network, "codeId: #{codeId}"
-      await pushCodeIds network, codeId
+      await proj.addCodeId network, codeId
       process.exit 0
-
-###*
-# @param {import('@apophis-sdk/core').NetworkConfig} network
-# @param {number} codeIds
-###
-pushCodeIds = (network, codeId) ->
-  await fs.appendFile 'codeIds.yml', '' # essentially touch
-  saved = YAML.parse(await fs.readFile 'codeIds.yml', 'utf8') ? {}
-  chainId = network.chainId
-  saved[chainId] = saved[chainId] ? []
-  saved[chainId].push codeId
-  await fs.writeFile 'codeIds.yml', YAML.stringify(saved, indent: 2)
