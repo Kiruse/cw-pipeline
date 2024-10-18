@@ -1,5 +1,5 @@
 [package]
-name = "{{project-name}}-api"
+name = "{{package-name}}"
 version = "0.1.0"
 authors = ["{{author}}"]
 edition = "2021"

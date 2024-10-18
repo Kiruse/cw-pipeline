@@ -1,5 +1,6 @@
 import AddrCommand from './addr.coffee'
 import BuildCommand from './build.coffee'
+import CreateCommand from './create.coffee'
 import ExecCommand from './exec.coffee'
 import InitCommand from './init.coffee'
 import InstantiateCommand from './instantiate.coffee'
@@ -13,6 +14,7 @@ import WhoamiCommand from './whoami.coffee'
 export commands = [
   AddrCommand
   BuildCommand
+  CreateCommand
   ExecCommand
   InitCommand
   InstantiateCommand

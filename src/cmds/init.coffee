@@ -68,6 +68,8 @@ export default (prog) ->
       await substitutePlaceholders target, {'project-deps': deps} # these contain other placeholders
       await substitutePlaceholders target,
         'project-name': name
+        'contract-name': name
+        'package-name': "#{name}-api"
         author: author
         'cw-version': (-> cwFeat.match(/^(\d+)\./)?[1] ? '1.5')()
         'cw-features': "cosmwasm_#{cwFeat.replace '.', '_'}"
