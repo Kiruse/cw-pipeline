@@ -3,9 +3,10 @@ import { Cosmos } from '@apophis-sdk/core'
 import { CosmWasm } from '@apophis-sdk/core/cosmwasm.js'
 import { Option } from 'commander'
 import fs from 'fs/promises'
+import path from 'path'
 import YAML from 'yaml'
 import { Project } from '~/project'
-import { getNetworkConfig, getSigner, NetworkOption, MainnetOption, parseFunds, FundsOption } from '~/prompting.js'
+import { FundsOption, getNetworkConfig, getSigner, inquireEditor, NetworkOption, MainnetOption, parseFunds } from '~/prompting.js'
 import { error, log } from '~/utils.js'
 
 ###* @param {import('commander').Command} prog ###
