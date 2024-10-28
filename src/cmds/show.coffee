@@ -1,3 +1,4 @@
+import { CosmWasm, encodeKeypath } from '@apophis-sdk/core/cosmwasm.js'
 import { Cosmos } from '@apophis-sdk/core'
 import YAML from 'yaml'
 import { NetworkOption, MainnetOption, getNetworkConfig } from '~/prompting'
@@ -27,4 +28,18 @@ export default (prog) ->
         console.log JSON.stringify res, null, 2
       else
         console.log YAML.stringify res, indent: 2
+      process.exit 0
+  cmd.command 'cw2'
+    .description 'Show CW2-standard contract information, if available.'
+    .argument '<address>', 'The address of the contract to show.'
+    .option '--json', 'Output as JSON. Useful for post-processing with tools like `jq`.', false
+    .addOption NetworkOption()
+    .addOption MainnetOption()
+    .action (addr, opts) ->
+      network = await getNetworkConfig opts
+      res = await CosmWasm.query.contractInfo network, addr
+      if opts.json
+        console.log JSON.stringify res, null, 2
+      else
+        console.log "#{res.contract}, v#{res.version}"
       process.exit 0
