@@ -34,9 +34,29 @@ Note that, currently, the `CWP_MNEMONIC` and `CWP_PRIVATE_KEY` variables are the
 
 # Roadmap
 - [x] Contract instantiation
-- [x] Project scaffolding
+- [x] Project scaffolding (single contract)
+- [x] Project scaffolding (monorepo)
 - [x] Multi-chain support (Chain Registry)
-- [ ] Multi-chain support (Custom)
+- [x] Multi-chain support (Custom)
 - [ ] DevEnv setup (WIP)
 - [x] Generate schemas as part of the production build process.
 - [ ] Secret storage.
+- [ ] Smart Contract query & execution TS codegen.
+- [ ] Unit testing with [cw-orchestrator](https://orchestrator.abstract.money/) and/or [cw-simulate](https://github.com/cosmology-tech/cw-simulate).
+
+# Commands
+CW-Pipeline uses a CLI library with built-in introspection, so you can always call `cw-pipeline <command> --help` to get more information about each command; which subcommands, arguments & options it has; and a short description of what it does.
+
+The top level commands are:
+
+- `setup`: Set up your development environment. This currently only supports some limited setup and cannot install missing binary dependencies.
+- `init`: Initialize a new project. This will eventually be deprecated in favor of `new project`.
+- `new <thing>`: Create a new `thing`. Which things are exactly available depends on the execution context. In a monorepo, for example, you can create `new contract` or `new package`.
+- `build [dev|prod]`: Build the project. `build dev` is useful for just testing whether your project builds, or for running local tests. `build prod` will build the project ready for deployment to testnet or to mainnet.
+- `store`: Store the compiled artifact. In a single-contract project, it stores the only `artifacts/*.wasm` file it can find. In a monorepo, you must specify which contract to store.
+- `instantiate`: Instantiate the last stored contract code. Functions similar to `store`.
+- `exec`: Perform a contract execution on the last instantiated contract. If a `msg.exec.yml` file exists, it will be used as the execution message. Otherwise, CWP will open an editor for you to write one, and prepopulate it with the last used message. The editor can be specified with the `EDITOR` environment variable on Linux/macOS.
+- `query`: Perform a contract query on the last instantiated contract. Behaves like `exec`.
+- `show`: Show information about things, such as network information from the chain registry, transaction information, or CW2-standard contract information.
+- `whoami`: Given proper signer setup, this will print out your signer's address.
+- `addr`: Your personal address book. Great when combined with other unix CLI tools like `grep` or `yq`. It is really just a simple key/value store.
