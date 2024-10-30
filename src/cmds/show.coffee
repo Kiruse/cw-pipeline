@@ -1,4 +1,4 @@
-import { CosmWasm, encodeKeypath } from '@apophis-sdk/core/cosmwasm.js'
+import { CosmWasm } from '@apophis-sdk/core/cosmwasm.js'
 import { Cosmos } from '@apophis-sdk/core'
 import YAML from 'yaml'
 import { NetworkOption, MainnetOption, getNetworkConfig } from '~/prompting'

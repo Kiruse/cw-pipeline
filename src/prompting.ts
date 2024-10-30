@@ -19,11 +19,12 @@ type PromptConfig<P extends Prompt<any, any>> = P extends Prompt<any, infer T> ?
 export const NetworkOption = (flags = '-n, --network') =>
   new Option(
     `${flags} <network>`,
-    'Network name corresponding to the chain registry to operate on.',
+    'Network name corresponding to the chain registry to operate on. You can set this option with the environment variable CWP_NETWORK.',
   );
 
 export const MainnetOption = (flags = '--mainnet') =>
-  new Option(flags, 'Whether to use mainnet.').default(['1', 'true'].includes(process.env.CWP_MAINNET!));
+  new Option(flags, 'Whether to use mainnet. You can set this option with the environment variable CWP_MAINNET.')
+    .default(['1', 'true'].includes(process.env.CWP_MAINNET!));
 
 export const FundsOption = (flags = '--funds <amounts...>') =>
   new Option(flags, 'Funds to send with the transaction. Defaults to none. Currently requires base denom w/o decimals, e.g. 1untrn.');

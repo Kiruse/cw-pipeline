@@ -58,5 +58,6 @@ The top level commands are:
 - `exec`: Perform a contract execution on the last instantiated contract. If a `msg.exec.yml` file exists, it will be used as the execution message. Otherwise, CWP will open an editor for you to write one, and prepopulate it with the last used message. The editor can be specified with the `EDITOR` environment variable on Linux/macOS.
 - `query`: Perform a contract query on the last instantiated contract. Behaves like `exec`.
 - `show`: Show information about things, such as network information from the chain registry, transaction information, or CW2-standard contract information.
+- `state`: Query the state of a CosmWasm smart contract. The `state show` command comes with some built-in support for common state types, such as JSON, YAML, and BigInt.
 - `whoami`: Given proper signer setup, this will print out your signer's address.
 - `addr`: Your personal address book. Great when combined with other unix CLI tools like `grep` or `yq`. It is really just a simple key/value store.
