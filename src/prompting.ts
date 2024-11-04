@@ -10,7 +10,7 @@ import { Option } from 'commander';
 import fs from 'fs/promises';
 import * as JsonSchema from 'jsonschema';
 import YAML from 'yaml';
-import { omit, TMPDIR } from './utils';
+import { omit, DATADIR } from './utils';
 import { loadConfig } from './config';
 
 type PromptValue<P extends Prompt<any, any>> = P extends Prompt<infer T, any> ? T : never;
@@ -95,7 +95,7 @@ var lastInquire: any;
 async function getLastInquire(name: string, defaultValue?: string): Promise<string | undefined> {
   if (!lastInquire) {
     try {
-      lastInquire = YAML.parse(await fs.readFile(`${TMPDIR}/last-inquire.yml`, 'utf8'));
+      lastInquire = YAML.parse(await fs.readFile(`${DATADIR}/last-inquire.yml`, 'utf8'));
     } catch {
       lastInquire = {};
     }
@@ -107,8 +107,8 @@ async function getLastInquire(name: string, defaultValue?: string): Promise<stri
 
 async function saveLastInquire(key: string, value: any) {
   lastInquire[key] = value;
-  await fs.mkdir(`${TMPDIR}`, { recursive: true });
-  await fs.writeFile(`${TMPDIR}/last-inquire.yml`, YAML.stringify(lastInquire, {indent: 2}));
+  await fs.mkdir(`${DATADIR}`, { recursive: true });
+  await fs.writeFile(`${DATADIR}/last-inquire.yml`, YAML.stringify(lastInquire, {indent: 2}));
 }
 
 /** Inquirer wrapper that supports commander options. Any options provided or answers found in the

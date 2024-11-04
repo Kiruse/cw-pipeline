@@ -21,14 +21,17 @@ export default (prog) ->
       error 'Contract already exists.' if await isDir "#{proj.root}/contracts/#{name}"
 
       cargo = await fs.readFile "#{proj.root}/Cargo.toml", 'utf8'
-      author = getAuthor cargo
       deps = getWorkspaceDeps cargo
 
       await copy "#{ASSETSDIR}/tpl/contract", "#{proj.root}/contracts/#{name}"
       await substitutePlaceholders "#{proj.root}/contracts/#{name}", { 'project-deps': deps }
       await substitutePlaceholders "#{proj.root}/contracts/#{name}",
         'contract-name': name
-        author: author
+        'package-info': [
+          'version.workspace = true'
+          'authors.workspace = true'
+          'edition.workspace = true'
+        ].join '\n'
       console.log 'Done.'
       process.exit 0
   cmd.command 'package'
@@ -40,14 +43,17 @@ export default (prog) ->
       error 'Package already exists.' if await isDir "#{proj.root}/packages/#{name}"
 
       cargo = await fs.readFile "#{proj.root}/Cargo.toml", 'utf8'
-      author = getAuthor cargo
       deps = getWorkspaceDeps cargo
 
       await copy "#{ASSETSDIR}/tpl/monorepo/packages/api", "#{proj.root}/packages/#{name}"
       await substitutePlaceholders "#{proj.root}/packages/#{name}", { 'project-deps': deps }
       await substitutePlaceholders "#{proj.root}/packages/#{name}",
         'package-name': name
-        author: author
+        'package-info': [
+          'version.workspace = true'
+          'authors.workspace = true'
+          'edition.workspace = true'
+        ].join '\n'
       console.log 'Done.'
       process.exit 0
 

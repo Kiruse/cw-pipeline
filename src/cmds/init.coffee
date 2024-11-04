@@ -65,16 +65,26 @@ export default (prog) ->
       #endregion update Cargo.toml
 
       #region replace placeholders
+      projectInfo = [
+        "version = \"0.1.0\""
+        "authors = [\"#{author}\"]"
+        "edition = \"2021\""
+      ].join '\n'
       await substitutePlaceholders target, {'project-deps': deps} # these contain other placeholders
       await substitutePlaceholders target,
         'project-name': name
+        'project-info': projectInfo
         'contract-name': name
         'package-name': "#{name}-api"
-        author: author
+        'package-info': if monorepo then [
+          'version.workspace = true'
+          'authors.workspace = true'
+          'edition.workspace = true'
+        ].join('\n') else projectInfo
         'cw-version': (-> cwFeat.match(/^(\d+)\./)?[1] ? '1.5')()
         'cw-features': "cosmwasm_#{cwFeat.replace '.', '_'}"
       unless monorepo
-        profiles = getSection cargo, '[profile.release]'
+        profiles = getSection cargo, 'profile.release'
         await fs.appendFile "#{target}/Cargo.toml", "\n[profile.release]\n" + profiles
       #endregion replace placeholders
 
