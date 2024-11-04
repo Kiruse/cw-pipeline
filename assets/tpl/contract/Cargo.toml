@@ -2,6 +2,7 @@
 [package]
 name = "{{contract-name}}"
 {{package-info}}
+publish = false
 
 [lib]
 crate-type = ["cdylib", "rlib"]
