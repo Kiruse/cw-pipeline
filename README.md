@@ -41,6 +41,7 @@ Note that, currently, the `CWP_MNEMONIC` and `CWP_PRIVATE_KEY` variables are the
 - [ ] DevEnv setup (WIP)
 - [x] Generate schemas as part of the production build process.
 - [ ] Secret storage.
+- [ ] Build with chain-specific features (e.g. standard *TokenFactory* vs. Injective *TokenFactory*)
 - [ ] Smart Contract query & execution TS codegen.
 - [ ] Unit testing with [cw-orchestrator](https://orchestrator.abstract.money/) and/or [cw-simulate](https://github.com/cosmology-tech/cw-simulate).
 

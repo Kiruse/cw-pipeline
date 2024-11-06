@@ -17,6 +17,7 @@ export default (prog) ->
       buildSchema = options.schema ? options.schemaOnly
       proj = await Project.find()
 
+      # TODO: build with chain-specific features using `--features` argument - see https://doc.rust-lang.org/cargo/reference/features.html#command-line-feature-options
       unless options.schemaOnly
         if env is 'dev' or !(await tryStat("#{proj.root}/Cargo.lock"))
           await $$"cargo build --lib --release --target wasm32-unknown-unknown"
