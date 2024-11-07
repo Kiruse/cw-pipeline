@@ -48,8 +48,9 @@ Note that, currently, the `CWP_MNEMONIC` and `CWP_PRIVATE_KEY` variables are the
 # Commands
 CW-Pipeline uses a CLI library with built-in introspection, so you can always call `cw-pipeline <command> --help` to get more information about each command; which subcommands, arguments & options it has; and a short description of what it does.
 
-The top level commands are:
+We distinguish between two families of commands: Development and Inspection commands. Development commands assist you in the development of CosmWasm smart contracts. Inspection commands help you inspect the state of the decentralized world.
 
+## Development Commands
 - `setup`: Set up your development environment. This currently only supports some limited setup and cannot install missing binary dependencies.
 - `init`: Initialize a new project. This will eventually be deprecated in favor of `new project`.
 - `new <thing>`: Create a new `thing`. Which things are exactly available depends on the execution context. In a monorepo, for example, you can create `new contract` or `new package`.
@@ -58,7 +59,19 @@ The top level commands are:
 - `instantiate`: Instantiate the last stored contract code. Functions similar to `store`.
 - `exec`: Perform a contract execution on the last instantiated contract. If a `msg.exec.yml` file exists, it will be used as the execution message. Otherwise, CWP will open an editor for you to write one, and prepopulate it with the last used message. The editor can be specified with the `EDITOR` environment variable on Linux/macOS.
 - `query`: Perform a contract query on the last instantiated contract. Behaves like `exec`.
+
+## Inspection Commands
+The decentralized world is massive. These commands are designed to help you navigate it. Most specialized commands are added as subcommands where appropriate.
+
 - `show`: Show information about things, such as network information from the chain registry, transaction information, or CW2-standard contract information.
 - `state`: Query the state of a CosmWasm smart contract. The `state show` command comes with some built-in support for common state types, such as JSON, YAML, and BigInt.
 - `whoami`: Given proper signer setup, this will print out your signer's address.
 - `addr`: Your personal address book. Great when combined with other unix CLI tools like `grep` or `yq`. It is really just a simple key/value store.
+
+### `show` Subcommands
+`show` gathers and displays current information about various things of the decentralized world. Unfortunately, it cannot access historical information for lack of an always-on indexer.
+
+- `network`: Show information about a network.
+- `tx`: Show information about a transaction.
+- `cw2`: Show CW2-standard contract information, if available.
+- `drand`: Show information about the DRAND randomness beacon. For example, a network's metadata or the latest round.

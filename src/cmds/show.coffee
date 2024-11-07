@@ -1,7 +1,9 @@
+import { input } from '@inquirer/prompts'
 import { CosmWasm } from '@apophis-sdk/core/cosmwasm.js'
 import { Cosmos } from '@apophis-sdk/core'
 import YAML from 'yaml'
-import { NetworkOption, MainnetOption, getNetworkConfig } from '~/prompting'
+import { drand } from '~/drand'
+import { NetworkOption, MainnetOption, getNetworkConfig, inquire } from '~/prompting'
 
 ###* @param {import('commander').Command} prog ###
 export default (prog) ->
@@ -42,4 +44,57 @@ export default (prog) ->
         console.log JSON.stringify res, null, 2
       else
         console.log "#{res.contract}, v#{res.version}"
+      process.exit 0
+
+  addDrand cmd
+
+###* @param {import('commander').Command} cmd ###
+addDrand = (cmd) ->
+  subcmd = cmd.command 'drand'
+    .description 'Show information about the Drand Network.'
+  subcmd.command 'chains'
+    .description 'List the official Drand chains identified by their hashes.'
+    .option '--api <url>', 'The URL of the Drand API to use.', 'https://api.drand.sh'
+    .action (opts) ->
+      res = await drand(opts.api).chains('GET')
+      unless Array.isArray(res) and res.find((item) -> typeof item is 'string')
+        throw new Error 'Unexpected response from Drand API.'
+      console.log res.join '\n'
+      process.exit 0
+  subcmd.command 'info'
+    .description 'Show information about a given Drand chain.'
+    .argument '[chain-hash]', 'Hash of the Drand chain to show information for. Will prompt if not specified.'
+    .option '--api <url>', 'The URL of the Drand API to use.', 'https://api.drand.sh'
+    .option '--json', 'Output as JSON. Useful for post-processing with tools like `jq`.', false
+    .action (hash, opts) ->
+      hash = hash or await inquire input,
+        name: 'drand-chain-hash'
+        message: 'Drand chain hash'
+        validate: (s) -> s.match(/^[a-fA-F0-9]+$/)? or 'Must be a hex string.'
+        options: opts
+      res = await drand(opts.api)[hash].info('GET')
+      if opts.json
+        console.log JSON.stringify res, null, 2
+      else
+        console.log YAML.stringify res, indent: 2
+      process.exit 0
+  subcmd.command 'round'
+    .description 'Show the latest round of a given Drand chain.'
+    .argument '[chain-hash]', 'Hash of the Drand chain to show the latest round for. Will prompt if not specified.'
+    .option '-r, --round <number>', 'Round number to show, or \'latest\'.', 'latest'
+    .option '--api <url>', 'The URL of the Drand API to use.', 'https://api.drand.sh'
+    .option '--json', 'Output as JSON. Useful for post-processing with tools like `jq`.', false
+    .action (hash, opts) ->
+      hash = hash or await inquire input,
+        name: 'drand-chain-hash'
+        message: 'Drand chain hash'
+        validate: (s) -> s.match(/^[a-fA-F0-9]+$/)? or 'Must be a hex string.'
+        options: opts
+      opts.round = parseInt(opts.round) unless opts.round is 'latest'
+
+      res = await drand(opts.api)[hash].public[opts.round]('GET')
+      if opts.json
+        console.log JSON.stringify res, null, 2
+      else
+        console.log YAML.stringify res, indent: 2
       process.exit 0
