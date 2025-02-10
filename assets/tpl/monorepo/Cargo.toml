@@ -11,8 +11,8 @@ members = [
 [workspace.dependencies]
 cosmwasm-schema = "{{cw-version}}"
 cosmwasm-std = { version = "{{cw-version}}", features = ["{{cw-features}}"] }
-cw-storage-plus = "1"
-cw2 = "1"
+cw-storage-plus = "{{cw-version}}"
+cw2 = "{{cw-version}}"
 schemars = "0.8"
 serde = { version = "1.0", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0" }
