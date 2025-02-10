@@ -6,7 +6,6 @@ name = "{{package-name}}"
 crate-type = ["cdylib", "rlib"]
 
 [features]
-backtraces = ["cosmwasm-std/backtraces"]
 
 [dependencies]
 {{project-deps}}
