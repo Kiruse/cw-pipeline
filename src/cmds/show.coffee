@@ -16,7 +16,10 @@ export default (prog) ->
     .option '--json', 'Output as JSON. Useful for post-processing with tools like `jq`.', false
     .action (network, opts) ->
       network = await getNetworkConfig { opts..., network }
-      console.log network
+      if opts.json
+        console.log JSON.stringify network, null, 2
+      else
+        console.log YAML.stringify network, indent: 2
       process.exit 0
   cmd.command 'tx'
     .description 'Show information about a specific transaction.'
