@@ -52,18 +52,25 @@ export async function getNetworkConfig(options: { network?: string, mainnet?: bo
     default: false,
   }, options);
 
-  let result = await Cosmos.getNetworkFromRegistry(mainnet ? network : `${network}testnet`);
-
   const cfg = await loadConfig();
-  const endpoints = cfg?.[result.name]?.endpoints;
+  const netname = mainnet ? network : `${network}testnet`;
+
+  let result = cfg[netname]?.network;
+  if (!result)
+    result = await Cosmos.getNetworkFromRegistry(netname);
+
+  const endpoints = cfg[netname]?.endpoints;
   if (endpoints) {
-    if (!endpoints.rest || !endpoints.rpc || !endpoints.ws)
-      throw new Error('Invalid endpoints in config. Must have rest, rpc, and ws.');
     result.endpoints = {
       rest: [endpoints.rest],
       rpc: [endpoints.rpc],
       ws: [endpoints.ws],
     };
+  }
+
+  if (!result.endpoints?.rest?.length || !result.endpoints?.rpc?.length || !result.endpoints?.ws?.length) {
+    console.error('Network endpoints missing. Please add them to the config file.');
+    process.exit(1);
   }
 
   return result;
