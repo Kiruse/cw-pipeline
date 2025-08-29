@@ -37,6 +37,7 @@ const ConfigSchema = z.record(z.string(), z.object({
     prettyName: z.optional(z.string()),
     addressPrefix: z.string(),
     assets: z.optional(z.array(FungibleAssetSchema)),
+    slip44: z.optional(z.number()),
     gas: z.array(GasConfigSchema),
     gasFactor: z.optional(z.number()),
   })),
