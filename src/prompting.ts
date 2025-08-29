@@ -1,7 +1,8 @@
-import { connections, Cosmos, NetworkConfig, networkFromRegistry } from '@apophis-sdk/core';
+import { type CosmosNetworkConfig } from '@apophis-sdk/core';
 import { Coin } from '@apophis-sdk/core/types.sdk.js';
 import { fromHex } from '@apophis-sdk/core/utils.js';
-import { LocalSigner } from '@apophis-sdk/local-signer';
+import { Cosmos } from '@apophis-sdk/cosmos';
+import { LocalSigner } from '@apophis-sdk/cosmos/local-signer.js';
 import { confirm, editor, input } from '@inquirer/prompts';
 import type { Prompt } from '@inquirer/type';
 import { recase } from '@kristiandupont/recase';
@@ -10,8 +11,8 @@ import { Option } from 'commander';
 import fs from 'fs/promises';
 import * as JsonSchema from 'jsonschema';
 import YAML from 'yaml';
-import { omit, DATADIR } from './utils';
 import { loadConfig } from './config';
+import { DATADIR, omit } from './utils';
 
 type PromptValue<P extends Prompt<any, any>> = P extends Prompt<infer T, any> ? T : never;
 type PromptConfig<P extends Prompt<any, any>> = P extends Prompt<any, infer T> ? T : never;
@@ -37,7 +38,7 @@ export function parseFunds(values: string[]): Coin[] {
   });
 }
 
-export async function getNetworkConfig(options: { network?: string, mainnet?: boolean } = {}): Promise<NetworkConfig> {
+export async function getNetworkConfig(options: { network?: string, mainnet?: boolean } = {}): Promise<CosmosNetworkConfig> {
   const network = await inquire(input, {
     name: 'network',
     message: 'Network name as defined in the chain registry',
@@ -51,14 +52,18 @@ export async function getNetworkConfig(options: { network?: string, mainnet?: bo
     default: false,
   }, options);
 
-  const result = await networkFromRegistry(mainnet ? network : `${network}testnet`);
+  let result = await Cosmos.getNetworkFromRegistry(mainnet ? network : `${network}testnet`);
 
   const cfg = await loadConfig();
   const endpoints = cfg?.[result.name]?.endpoints;
   if (endpoints) {
-    if (typeof endpoints.rest === 'string') connections.setRest(result, endpoints.rest);
-    if (typeof endpoints.rpc === 'string') connections.setRpc(result, endpoints.rpc);
-    if (typeof endpoints.ws === 'string') connections.setWs(result, endpoints.ws);
+    if (!endpoints.rest || !endpoints.rpc || !endpoints.ws)
+      throw new Error('Invalid endpoints in config. Must have rest, rpc, and ws.');
+    result.endpoints = {
+      rest: [endpoints.rest],
+      rpc: [endpoints.rpc],
+      ws: [endpoints.ws],
+    };
   }
 
   return result;

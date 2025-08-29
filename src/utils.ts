@@ -1,4 +1,4 @@
-import { type NetworkConfig } from '@apophis-sdk/core';
+import { type CosmosNetworkConfig } from '@apophis-sdk/core';
 import fs from 'fs/promises'
 import os from 'os'
 import path from 'path';
@@ -40,7 +40,7 @@ export function getLogTimestamp() {
   return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
 }
 
-export async function log(network: NetworkConfig, data: unknown) {
+export async function log(network: CosmosNetworkConfig, data: unknown) {
   await fs.appendFile(
     'cw-pipeline.log',
     `[${getLogTimestamp()} ${network.chainId}]\n` +

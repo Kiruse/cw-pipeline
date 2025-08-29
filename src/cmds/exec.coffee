@@ -1,5 +1,5 @@
 import { isFile } from '~/templating'
-import { CosmWasm } from '@apophis-sdk/core/cosmwasm.js'
+import { CosmWasm } from '@apophis-sdk/cosmwasm'
 import fs from 'fs/promises'
 import YAML from 'yaml'
 import { Project } from '~/project'
@@ -61,7 +61,7 @@ execAddress = ({ proj, network, options... }) ->
     await log network, "Executing contract at #{options.contract} with message:"
     await log network, msg
 
-    result = await CosmWasm.execute network, signer, options.contract, CosmWasm.toBinary(msg), funds
+    result = await CosmWasm.execute network, signer, options.contract, msg, funds
     await log network, result
     console.log 'Success! Details have been logged to cw-pipeline.log.'
     process.exit 0

@@ -1,6 +1,6 @@
 import { isFile } from '~/templating'
-import { Cosmos } from '@apophis-sdk/core'
-import { CosmWasm } from '@apophis-sdk/core/cosmwasm.js'
+import { Cosmos } from '@apophis-sdk/cosmos'
+import { CosmWasm } from '@apophis-sdk/cosmwasm'
 import { Option } from 'commander'
 import fs from 'fs/promises'
 import path from 'path'
@@ -68,7 +68,7 @@ export default (prog) ->
 
       try
         await log network, "Instantiating contract..."
-        addr = await CosmWasm.instantiate { network, signer, codeId, label, admin, msg: CosmWasm.toBinary(msg), funds }
+        addr = await CosmWasm.instantiate { network, signer, codeId, label, admin, msg, funds }
         await proj.addContractAddr network, codeId, addr
         console.log "Contract address: #{addr}"
         await log network, "Instantiated contract at #{addr}"

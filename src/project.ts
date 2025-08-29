@@ -1,8 +1,8 @@
+import { type CosmosNetworkConfig } from '@apophis-sdk/core';
 import fs from 'fs/promises';
 import path from 'path';
 import YAML from 'yaml';
 import { validateJson } from './prompting';
-import { NetworkConfig } from '@apophis-sdk/core';
 import { isDir, isFile } from './templating';
 
 /** Abstraction for a Rust project in the context of a terminal user. */
@@ -36,7 +36,7 @@ export class Project {
     return this;
   }
 
-  async getLastContractAddr(network: NetworkConfig) {
+  async getLastContractAddr(network: CosmosNetworkConfig) {
     const doc = YAML.parse(await fs.readFile(path.join(this.projectPath, 'addrs.yml'), 'utf8'));
     const addrs = doc?.[network.name];
     if (!addrs?.length)
@@ -44,7 +44,7 @@ export class Project {
     return addrs[addrs.length - 1]?.address;
   }
 
-  async getLastCodeId(network: NetworkConfig) {
+  async getLastCodeId(network: CosmosNetworkConfig) {
     if (this.isMonorepo && !this.project)
       throw 'You must select a project when working with monorepos.';
 
@@ -64,7 +64,7 @@ export class Project {
     return await fs.readdir(path.join(this.root, 'contracts'));
   }
 
-  async addCodeId(network: NetworkConfig, codeId: bigint) {
+  async addCodeId(network: CosmosNetworkConfig, codeId: bigint) {
     // pseudo-touch
     await fs.appendFile(`${this.projectPath}/codeIds.yml`, '');
 
@@ -74,7 +74,7 @@ export class Project {
     await fs.writeFile(`${this.projectPath}/codeIds.yml`, YAML.stringify(doc, { indent: 2 }));
   }
 
-  async addContractAddr(network: NetworkConfig, codeId: bigint, address: string) {
+  async addContractAddr(network: CosmosNetworkConfig, codeId: bigint, address: string) {
     // pseudo-touch
     await fs.appendFile(`${this.projectPath}/addrs.yml`, '');
 

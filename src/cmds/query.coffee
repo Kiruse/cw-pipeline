@@ -1,5 +1,5 @@
 import { select } from '@inquirer/prompts'
-import { CosmWasm } from '@apophis-sdk/core/cosmwasm.js'
+import { CosmWasm } from '@apophis-sdk/cosmwasm'
 import fs from 'fs/promises'
 import path from 'path'
 import YAML from 'yaml'
@@ -58,7 +58,7 @@ queryAddress = ({ proj, network, options... }) ->
     await log network, "Querying contract at #{options.contract} with message:"
     await log network, msg
 
-    result = await CosmWasm.query.smart network, options.contract, CosmWasm.toBinary(msg)
+    result = await CosmWasm.query.smart network, options.contract, msg
     console.log YAML.stringify result, indent: 2
     await log network, result
     process.exit 0

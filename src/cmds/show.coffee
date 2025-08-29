@@ -1,6 +1,6 @@
 import { input } from '@inquirer/prompts'
-import { CosmWasm } from '@apophis-sdk/core/cosmwasm.js'
-import { Cosmos } from '@apophis-sdk/core'
+import { Cosmos } from '@apophis-sdk/cosmos'
+import { CosmWasm } from '@apophis-sdk/cosmwasm'
 import YAML from 'yaml'
 import { drand } from '~/drand'
 import { NetworkOption, MainnetOption, getNetworkConfig, inquire } from '~/prompting'
