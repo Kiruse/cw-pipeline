@@ -1,6 +1,6 @@
 import { restful, RestApi, RestMethods } from '@kiruse/restful';
 import { extendDefaultMarshaller, IgnoreMarshalUnit, MarshalUnitContext, morph, pass, RecaseMarshalUnit } from '@kiruse/marshal';
-import { recase } from '@kristiandupont/recase';
+import { camelCase } from 'case-anything';
 
 type DrandApi = RestApi<{
   [chainHash: string]: {
@@ -61,7 +61,7 @@ const { marshal, unmarshal } = extendDefaultMarshaller([
   IgnoreMarshalUnit(Date),
   RecaseMarshalUnit(
     s => s,
-    recase('mixed', 'camel'),
+    camelCase,
   ),
   {
     generic: false,

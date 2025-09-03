@@ -1,4 +1,4 @@
-import { recase } from '@kristiandupont/recase';
+import { snakeCase } from 'case-anything';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -83,7 +83,7 @@ export function getWorkspaceDeps(contents: string) {
     .join('\n');
 }
 
-export const toCrateName = (dir: string) => recase('mixed', 'snake')(path.basename(dir)).replace(/\s+/g, '_');
+export const toCrateName = (dir: string) => snakeCase(path.basename(dir)).replace(/\s+/g, '_');
 
 export async function getCrateName(dir: string) {
   const contents = await fs.readFile(`${dir}/Cargo.toml`, 'utf8');

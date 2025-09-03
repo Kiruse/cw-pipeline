@@ -1,4 +1,4 @@
-import { recase } from '@kristiandupont/recase'
+import { snakeCase } from 'case-anything'
 import { $ as $$ } from 'bun'
 import { basename } from 'path'
 import { Project } from '~/project'
@@ -23,7 +23,7 @@ export default (prog) ->
           await $$"cargo build --lib --release --target wasm32-unknown-unknown"
 
         if env is 'prod'
-          projCacheName = recase('mixed', 'snake')(basename proj.root).replaceAll(/\s+/g, '_')
+          projCacheName = snakeCase(basename proj.root).replaceAll(/\s+/g, '_')
           vCode = "-v#{proj.root}:/code"
           vTargetCache = "-v#{projCacheName}_cache:/target"
           vRegCache = "-vregistry_cache:/usr/local/cargo/registry"
