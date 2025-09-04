@@ -21,7 +21,7 @@ export default (prog) ->
       proj = await Project.find().catch(=>)
 
       # if an address, regardless of monorepo
-      return await execAddress { proj, network, options... } if isAddress options.contract
+      return await execAddress { options..., proj, network } if isAddress options.contract
       error 'Must specify a contract address when not in a project' unless proj
 
       if proj.isMonorepo and not options.contract
@@ -34,7 +34,7 @@ export default (prog) ->
       addr = options.contract ? await proj.getLastContractAddr(network).catch(=>)
       unless addr
         error "No recent address found. Please specify a contract address or deploy a contract first."
-      await execAddress { proj, network, options..., contract: addr }
+      await execAddress { options..., proj, network, contract: addr }
 
 execAddress = ({ proj, network, options... }) ->
   signer = await getSigner()
@@ -58,8 +58,7 @@ execAddress = ({ proj, network, options... }) ->
   funds = parseFunds options.funds ? []
 
   try
-    await log network, "Executing contract at #{options.contract} with message:"
-    await log network, msg
+    await log network, "Executing contract at #{options.contract} from #{signer.address network} with message:\n", msg
 
     result = await CosmWasm.execute network, signer, options.contract, msg, funds
     await log network, result
