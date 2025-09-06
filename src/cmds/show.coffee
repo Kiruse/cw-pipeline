@@ -9,6 +9,20 @@ import { NetworkOption, MainnetOption, getNetworkConfig, inquire } from '~/promp
 export default (prog) ->
   cmd = prog.command 'show'
     .description 'Show information about things.'
+  cmd.command 'account'
+    .description 'Show information about a specific account.'
+    .argument '<address>', 'The address of the account to show.'
+    .option '--json', 'Output as JSON. Useful for post-processing with tools like `jq`.', false
+    .addOption NetworkOption()
+    .addOption MainnetOption()
+    .action (address, opts) ->
+      network = await getNetworkConfig opts
+      { info } = await Cosmos.rest(network).cosmos.auth.v1beta1.account_info[address]('GET')
+      if opts.json
+        console.log JSON.stringify info, null, 2
+      else
+        console.log YAML.stringify info, indent: 2
+      process.exit 0
   cmd.command 'network'
     .description 'Show information about a network.'
     .argument '[network]', 'The network to show information about. Prompts if not specified.'
