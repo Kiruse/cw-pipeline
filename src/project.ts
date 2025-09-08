@@ -2,11 +2,40 @@ import { type CosmosNetworkConfig } from '@apophis-sdk/core';
 import fs from 'fs/promises';
 import path from 'path';
 import YAML from 'yaml';
+import * as z from 'valibot';
 import { validateJson } from './prompting';
 import { isDir, isFile } from './templating';
 
+const DeploymentConfigSchema = z.object({
+  contract: z.string(),
+  instantiate: z.optional(z.any()),
+  migrate: z.optional(z.any()),
+  execute: z.optional(z.array(z.object({
+    name: z.string(),
+    msg: z.any(),
+    funds: z.optional(z.union([
+      z.array(z.string()),
+      z.literal('prompt'),
+    ])),
+    /** Templates for use in the messages. These are typically used with `$bin()` or `$json()`
+     * to populate nested objects that will be encoded & embedded within the message.
+     */
+    tpl: z.optional(z.record(z.string(), z.any())),
+  }))),
+  query: z.optional(z.array(z.object({
+    name: z.string(),
+    msg: z.any(),
+    tpl: z.optional(z.record(z.string(), z.any())),
+  }))),
+});
+
+const DeploymentDocumentSchema = z.array(DeploymentConfigSchema)
+type DeploymentDocument = z.InferOutput<typeof DeploymentDocumentSchema>;
+
 /** Abstraction for a Rust project in the context of a terminal user. */
 export class Project {
+  #deploymentConfig: DeploymentConfig | undefined;
+
   constructor(
     /** The root project directory. If we're inside a monorepo, this is the monorepo root. */
     public root: string,
@@ -84,6 +113,12 @@ export class Project {
     await fs.writeFile(`${this.projectPath}/addrs.yml`, YAML.stringify(doc, { indent: 2 }));
   }
 
+  async getDeploymentConfig() {
+    if (!this.#deploymentConfig)
+      this.#deploymentConfig = await DeploymentConfig.load(`${this.projectPath}/.cwp/deployments`);
+    return this.#deploymentConfig;
+  }
+
   static async find(root = process.cwd()) {
     const first = await findRustProject(root).catch(() => undefined);
     if (!first) throw new Error('No Rust project found');
@@ -104,6 +139,22 @@ export class Project {
 
   get projectPath() {
     return this.project ? `${this.root}/contracts/${this.project}` : this.root;
+  }
+}
+
+export class DeploymentConfig {
+  constructor(public readonly doc: DeploymentDocument) {}
+
+  static async load(filepath: string) {
+    return new DeploymentConfig(z.parse(DeploymentDocumentSchema, await loadYamlFile(filepath)));
+  }
+
+  get contracts() {
+    return Array.from(new Set(this.variants.map(v => v.indexOf('#') >= 0 ? v.split('#')[0] : v)));
+  }
+
+  get variants() {
+    return this.doc.map(c => c.contract);
   }
 }
 
@@ -129,4 +180,18 @@ async function detectMonorepo(dir: string) {
   const contents = await fs.readFile(`${dir}/Cargo.toml`, 'utf8');
   const lines = contents.split('\n');
   return lines.includes('[workspace]');
+}
+
+async function loadYamlFile(filepath: string) {
+  const exts = ['yml', 'yaml'];
+  if (exts.some(ext => filepath.endsWith(ext))) {
+    const idx = filepath.lastIndexOf('.');
+    filepath = filepath.slice(0, idx);
+  }
+  const files = await Promise.all(
+    exts.map(ext => fs.readFile(`${filepath}.${ext}`, 'utf8').catch(() => undefined))
+  );
+  const file = files.find(file => file !== undefined);
+  if (!file) throw new Error(`No ${exts.map(ext => `.${ext}`).join(' or ')} file found at ${filepath}`);
+  return YAML.parse(file) as unknown;
 }

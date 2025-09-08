@@ -3,7 +3,7 @@ import { Coin } from '@apophis-sdk/core/types.sdk.js';
 import { fromHex } from '@apophis-sdk/core/utils.js';
 import { Cosmos } from '@apophis-sdk/cosmos';
 import { LocalSigner } from '@apophis-sdk/cosmos/local-signer.js';
-import { confirm, editor, input } from '@inquirer/prompts';
+import { confirm, editor, input, select } from '@inquirer/prompts';
 import type { Prompt } from '@inquirer/type';
 import { bech32 } from '@scure/base';
 import { snakeCase } from 'case-anything';
@@ -13,6 +13,7 @@ import * as JsonSchema from 'jsonschema';
 import YAML from 'yaml';
 import { loadConfig } from './config';
 import { DATADIR, omit } from './utils';
+import { Project } from './project';
 
 type PromptValue<P extends Prompt<any, any>> = P extends Prompt<infer T, any> ? T : never;
 type PromptConfig<P extends Prompt<any, any>> = P extends Prompt<any, infer T> ? T : never;
@@ -30,9 +31,12 @@ export const MainnetOption = (flags = '--mainnet') =>
 export const FundsOption = (flags = '--funds <amounts...>') =>
   new Option(flags, 'Funds to send with the transaction. Defaults to none. Currently requires base denom w/o decimals, e.g. 1untrn.');
 
-export const SequenceOption = (flags = '-s, --sequence') =>
+export const SequenceOption = (flags = '-s, --sequence <number>') =>
   new Option(flags, 'Sequence number to use for the transaction. Defaults to the sequence number stored on-chain.')
     .argParser((value) => BigInt(value));
+
+export const ContractOption = (flags = '-c, --contract <contract>') =>
+  new Option(flags, 'Contract address or name from the deployments config. When omitted, prompted.');
 
 export function parseFunds(values: string[]): Coin[] {
   return values.map(value => {
@@ -92,6 +96,39 @@ export async function getSigner(): Promise<LocalSigner> {
   else
     signer = await LocalSigner.fromMnemonic(process.env.CWP_MNEMONIC!);
   return signer;
+}
+
+export async function getDeploymentContract(project: Project, value: string) {
+  const config = await project.getDeploymentConfig();
+  const exactMatch = config.variants.find(c => c === value);
+  if (exactMatch) return exactMatch;
+
+  if (!value) {
+    const choice = await inquire(select, {
+      message: 'Choose a contract',
+      choices: config.variants,
+    });
+    return choice;
+  }
+
+  const partialMatches = config.variants.filter(c => c.includes(value));
+  if (partialMatches.length === 0) throw new InputError('No matching contract found');
+
+  if (partialMatches.length === 1) {
+    const result = await inquire(confirm, {
+      message: `Only one match found: ${partialMatches[0]}. Use this?`,
+      default: true,
+    });
+    if (!result) throw new InputError('User rejected closest match');
+    console.log('To avoid this prompt in the future you may provide an exact match.')
+    return partialMatches[0];
+  }
+
+  const choice = await inquire(select, {
+    message: 'Choose a contract',
+    choices: partialMatches,
+  });
+  return choice;
 }
 
 export async function validateJson(msg: any, schemaPath: string): Promise<void> {
@@ -177,5 +214,12 @@ export function isAddress(input: string) {
     return true;
   } catch {
     return false;
+  }
+}
+
+export class InputError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'InputError';
   }
 }

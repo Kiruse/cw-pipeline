@@ -10,6 +10,6 @@ program.version VERSION
 Apophis.use DefaultCosmWasmMiddlewares...
 await Apophis.init()
 
-cmd program for cmd in commands
+await Promise.all commands.map (cmd) -> cmd program
 
 program.parse()
