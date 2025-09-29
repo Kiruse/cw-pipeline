@@ -1,9 +1,10 @@
+import { select } from '@inquirer/prompts'
 import { isFile } from '~/templating'
 import { CosmWasm } from '@apophis-sdk/cosmwasm'
 import fs from 'fs/promises'
 import YAML from 'yaml'
 import { Project } from '~/project'
-import { getNetworkConfig, getSigner, NetworkOption, MainnetOption, FundsOption, parseFunds, isAddress, inquireEditor } from '~/prompting'
+import { getNetworkConfig, getSigner, NetworkOption, MainnetOption, FundsOption, parseFunds, isAddress, inquireEditor, inquire } from '~/prompting'
 import { error, log } from '~/utils'
 
 ###* @param {import('commander').Command} prog ###
@@ -53,7 +54,8 @@ execAddress = ({ proj, network, options... }) ->
     YAML.parse(msgraw.trim()) ? {}
   catch err
     error "Failed to read YAML:", err
-  await proj.validateMsg msg, 'execute' if options.validate
+  # TODO: update to new signature
+  # await proj.validateMsg msg, 'execute' if options.validate
 
   funds = parseFunds options.funds ? []
 

@@ -12,4 +12,5 @@ export default (prog) ->
       proj = await Project.find()
       contract = await getDeploymentContract proj, options.contract
       console.log "Deploying contract #{contract}..."
+      console.error "Not yet implemented!"
       # todo: rest of the implementation

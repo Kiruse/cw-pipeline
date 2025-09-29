@@ -9,11 +9,14 @@ import { bech32 } from '@scure/base';
 import { snakeCase } from 'case-anything';
 import { Option } from 'commander';
 import fs from 'fs/promises';
+import { select as selectpro } from 'inquirer-select-pro';
 import * as JsonSchema from 'jsonschema';
+import path from 'path';
 import YAML from 'yaml';
 import { loadConfig } from './config';
-import { DATADIR, omit } from './utils';
 import { Project } from './project';
+import { getFiles } from './templating';
+import { DATADIR, omit } from './utils';
 
 type PromptValue<P extends Prompt<any, any>> = P extends Prompt<infer T, any> ? T : never;
 type PromptConfig<P extends Prompt<any, any>> = P extends Prompt<any, infer T> ? T : never;
@@ -131,8 +134,7 @@ export async function getDeploymentContract(project: Project, value: string) {
   return choice;
 }
 
-export async function validateJson(msg: any, schemaPath: string): Promise<void> {
-  const schema = JSON.parse(await fs.readFile(schemaPath, 'utf8'));
+export async function validateJson(msg: any, schema: JsonSchema.Schema): Promise<void> {
   const results = JsonSchema.validate(msg, schema);
   if (!results.valid) {
     console.error('Invalid JSON:');
@@ -206,6 +208,54 @@ export async function inquireEditor(
   if (process.env.EDITOR === 'code')
     process.env.EDITOR = 'code --wait';
   return await inquire(editor, promptConfig, options);
+}
+
+export interface InquireArtifactsOptions {
+  promptName?: string;
+  message?: string;
+}
+
+export async function inquireArtifacts(project: Project, opts: InquireArtifactsOptions = {}) {
+  const dir = `${project.root}/artifacts`;
+  const files = await getFiles(dir);
+  return await inquire(selectpro, {
+    name: opts.promptName ?? 'artifact',
+    message: opts.message ?? 'Choose an artifact',
+    options: (input) => files
+      .filter(f => !input || f.includes(input))
+      .sort()
+      .map(f => ({ name: f.replace(`${dir}/`, '').replace(/\.wasm$/, ''), value: f })),
+    multiple: false,
+  });
+}
+
+export interface InquireContractsOptions {
+  promptName?: string;
+  message?: string;
+}
+
+export async function inquireContracts(project: Project, opts: InquireContractsOptions = {}) {
+  const contracts = await project.getContractNames();
+  return await inquire(selectpro, {
+    name: opts.promptName ?? 'contract',
+    message: opts.message ?? 'Choose a contract',
+    options: (input) => contracts
+      .filter(c => !input || c.includes(input))
+      .sort()
+      .map(c => ({ name: c, value: c })),
+    multiple: false,
+  });
+}
+
+
+export function getContractFromPath(filepath: string) {
+  filepath = path.normalize(filepath);
+  if (!filepath.includes(path.sep)) return filepath;
+  const parts = filepath.split(path.sep);
+  if (!parts.includes('artifacts') && !parts.includes('contracts')) throw new Error('Failed to determine contract name from path');
+  const name = parts[parts.indexOf('artifacts') + 1] ?? parts[parts.indexOf('contracts') + 1];
+  if (!name) throw new Error('Failed to determine contract name from path');
+  return name.replace(/\.wasm$/, '');
 }
 
 export function isAddress(input: string) {

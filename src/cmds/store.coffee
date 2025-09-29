@@ -1,11 +1,11 @@
-import { select } from '@inquirer/prompts'
-import { getFiles, isFile } from '~/templating'
 import { Cosmos } from '@apophis-sdk/cosmos'
 import { CosmWasm } from '@apophis-sdk/cosmwasm'
 import fs from 'fs/promises'
+import { select } from 'inquirer-select-pro'
 import path from 'path'
 import { Project } from '~/project'
-import { getNetworkConfig, getSigner, NetworkOption, MainnetOption, inquire } from '~/prompting.js'
+import { getNetworkConfig, getSigner, NetworkOption, MainnetOption, getContractFromPath, inquire } from '~/prompting.js'
+import { isFile } from '~/templating'
 import { error, log } from '~/utils'
 
 ###* @param {import('commander').Command} prog ###
@@ -27,23 +27,21 @@ export default (prog) ->
       filepath = if await isFile contract
         contract
       else if proj
-        await proj.activate contract
-        if proj.isMonorepo
-          unless proj.project
-            choice = await inquire select,
-              name: 'contract'
-              message: 'Select a contract to upload & store'
-              choices: await proj.getContractNames()
-            await proj.activate choice
-          path.join proj.projectRoot, 'artifacts', "#{contract}.wasm"
-        else
-          files = (await getFiles 'artifacts').filter (f) -> f.endsWith '.wasm'
-          error 'No WASM files found in artifacts directory.' if files.length is 0
-          error 'Multiple WASM files found in artifacts directory. Please specify one.' if files.length > 1
-          files[0]
+        files = await fs.readdir path.join(proj.root, 'artifacts')
+        files = files.filter (f) -> f.endsWith '.wasm'
+        await inquire select,
+          name: 'artifact'
+          message: 'Choose an artifact'
+          options: (input) ->
+            files
+              .filter (f) -> not input or f.includes(input)
+              .sort()
+              .map (f) -> { name: f.replace(/\.wasm$/, ''), value: path.join(proj.root, 'artifacts', f) }
+          multiple: false
       else
         error "Must specify a WASM file when not in a Rust project" unless contract
         error "Not in a Rust project, and no WASM file found at #{path.resolve contract}"
+      contract = getContractFromPath filepath
 
       bytecode = Uint8Array.from(await fs.readFile(filepath))
 
@@ -57,5 +55,5 @@ export default (prog) ->
 
       console.log "Code ID: #{codeId}"
       await log network, "codeId: #{codeId}"
-      await proj.addCodeId network, codeId
+      await proj.addCodeId network, contract, codeId if proj
       process.exit 0

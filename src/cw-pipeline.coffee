@@ -13,3 +13,10 @@ await Apophis.init()
 await Promise.all commands.map (cmd) -> cmd program
 
 program.parse()
+
+process.on 'unhandledRejection', (reason) ->
+  if typeof reason is 'string'
+    console.error reason
+    process.exit 1
+  else
+    throw reason

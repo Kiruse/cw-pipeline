@@ -1,20 +1,16 @@
-import { isFile } from '~/templating'
 import { Cosmos } from '@apophis-sdk/cosmos'
 import { CosmWasm } from '@apophis-sdk/cosmwasm'
-import { Option } from 'commander'
-import fs from 'fs/promises'
-import path from 'path'
-import YAML from 'yaml'
+import { select } from 'inquirer-select-pro'
 import { Project } from '~/project'
-import { getNetworkConfig, getSigner, inquireEditor, NetworkOption, MainnetOption } from '~/prompting.js'
+import { getNetworkConfig, getSigner, NetworkOption, MainnetOption, inquire } from '~/prompting.js'
 import { error, log } from '~/utils.js'
 
 ###* @param {import('commander').Command} prog ###
 export default (prog) ->
   prog.command 'migrate'
     .description 'Migrate a Smart Contract on the blockchain.'
-    .argument '<contract>', 'Contract address to migrate.'
-    .option '-c, --code-id <codeId>', 'Code ID of the Smart Contract to migrate to. Can be a number or a name corresponding to a contract in your monorepo.'
+    .argument '[contract]', 'Contract name (if in a project) or address to migrate. When omitted, prompts for a contract name.'
+    .option '--code-id <codeId>', 'Code ID to migrate to. When in a project, the code ID will be inferred from the contract name. Rejects if the latest code ID is the same as the current.'
     .option '-m, --msg <path>', 'Path to the YAML file containing the migrate message. Defaults to msg.migrate.yml in the current directory.'
     .option '--no-validate', 'Do not validate the migrate message against the schema. Defaults to validating.'
     .addOption NetworkOption()
@@ -28,39 +24,39 @@ export default (prog) ->
       await Cosmos.ws(network).ready()
       proj = await Project.find().catch(=>)
 
-      {codeId} = options
+      contractName = contract
+      contractAddr = contract
       codeId = if codeId?.match /^[0-9]+$/
         BigInt codeId
       else if proj
-        await proj.activate codeId
-        if proj.isMonorepo and not proj.project
-          choice = await inquire select,
+        unless contract
+          contracts = await proj.getDeployedContracts(network)
+          {contract, name: contractName, address: contractAddr} = await inquire select,
             name: 'contract'
-            message: 'Select a contract to migrate to'
-            choices: await proj.getContractNames()
-          await proj.activate choice
-        await proj.getLastCodeId network
+            message: 'Select a contract to migrate'
+            options: (input) ->
+              contracts
+                .filter (c) -> not input.trim() or c.includes(input.trim())
+                .sort()
+                .map (c) -> { name: c.name, value: c }
+            multiple: false
+        await proj.getLastCodeId network, contract
       else
         error 'Must specify code ID when not in a project'
 
-      msgpath = options.msg ? 'msg.migrate.yml'
-      msgraw = if await isFile msgpath
-        await fs.readFile msgpath, 'utf8'
-      else
-        await inquireEditor
-          name: "#{path.basename proj.root}.msg.migrate"
-          message: 'Enter your migrate message in YAML'
-          default: 'enter: yaml'
+      currentCodeId = await proj?.getCurrentCodeId(network, contractName)
+      error 'Latest/specified code ID is identical to current' if currentCodeId is codeId
 
-      msg = try
-        YAML.parse(msgraw.trim()) ? {}
-      catch err
-        error "Failed to read YAML:", err
-      await proj.validateMsg msg, 'migrate' if options.validate
+      {msg} = await proj.getMsg network, contract, 'migrate'
+      error 'No migrate message found in .cwp/msgs.yml' unless msg
+      await proj.validateMsg contract, 'migrate', msg if options.validate
+
+      unless await confirm "Confirm migration of #{contractAddr} (#{currentCodeId} -> #{codeId})"
+        error 'User aborted migration'
 
       try
         await log network, "Migrating contract..."
-        result = await CosmWasm.migrate network, signer, contract, codeId, msg
+        result = await CosmWasm.migrate network, signer, contractAddr, codeId, msg
         console.log "Migration successful"
         await log network, "Migrated contract #{contract} to code ID #{codeId}"
       catch err

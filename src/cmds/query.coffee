@@ -52,7 +52,8 @@ queryAddress = ({ proj, network, options... }) ->
     YAML.parse(msgraw.trim()) ? {}
   catch err
     error "Failed to read YAML:", err
-  await proj.validateMsg msg, 'query' if options.validate
+  # TODO: update to new validate signature
+  # await proj.validateMsg msg, 'query' if options.validate
 
   try
     await log network, "Querying contract at #{options.contract} with message:"
