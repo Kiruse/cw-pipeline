@@ -47,7 +47,7 @@ export default (prog) ->
       currentCodeId = await proj?.getCurrentCodeId(network, contractName)
       error 'Latest/specified code ID is identical to current' if currentCodeId is codeId
 
-      {msg} = await proj.getMsg network, contract, 'migrate'
+      {msg} = await proj.getMsg({ network, signer }, contract, 'migrate')
       error 'No migrate message found in .cwp/msgs.yml' unless msg
       await proj.validateMsg contract, 'migrate', msg if options.validate
 

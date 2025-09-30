@@ -1,12 +1,15 @@
 import { type CosmosNetworkConfig } from '@apophis-sdk/core';
+import { Coin } from '@apophis-sdk/core/types.sdk.js';
+import { BigintMarshalUnit, DateMarshalUnit, extendDefaultMarshaller } from '@kiruse/marshal';
 import fs from 'fs/promises';
 import path from 'path';
-import YAML from 'yaml';
 import * as z from 'valibot';
-import { validateJson } from './prompting';
+import YAML from 'yaml';
+import { MsgContext, processMsg, Substitutions } from './messaging';
+import { inquireFunds, parseFunds, validateJson } from './prompting';
 import { isDir, isFile } from './templating';
-import { BigintMarshalUnit, DateMarshalUnit, extendDefaultMarshaller } from '@kiruse/marshal';
-import { Coin } from '@apophis-sdk/core/types.sdk.js';
+
+type CoinSpec = string[] | 'prompt';
 
 export const { marshal, unmarshal } = extendDefaultMarshaller([
   BigintMarshalUnit,
@@ -64,6 +67,8 @@ const AddrsSchema = z.record(
   )
 );
 
+const TplsSchema = z.record(z.string(), z.any());
+
 const MsgsSchema = z.record(
   z.string(), // contract name
   z.object({
@@ -73,9 +78,11 @@ const MsgsSchema = z.record(
         z.array(z.string()),
         z.literal('prompt'),
       ])),
+      tpls: z.optional(TplsSchema),
     })),
     migrate: z.optional(z.object({
       msg: z.any(),
+      tpls: z.optional(TplsSchema),
     })),
     execute: z.optional(z.array(
       z.object({
@@ -85,16 +92,20 @@ const MsgsSchema = z.record(
           z.array(z.string()),
           z.literal('prompt'),
         ])),
+        tpls: z.optional(TplsSchema),
       })
     )),
     query: z.optional(z.array(
       z.object({
         name: z.string(),
         msg: z.any(),
+        tpls: z.optional(TplsSchema),
       })
     )),
+    tpls: z.optional(TplsSchema),
   })
 );
+export type MsgsDoc = z.InferOutput<typeof MsgsSchema>;
 
 const DeploymentDocumentSchema = z.array(DeploymentConfigSchema)
 type DeploymentDocument = z.InferOutput<typeof DeploymentDocumentSchema>;
@@ -189,46 +200,44 @@ export class Project {
    * be `undefined`.
    */
   async getMsg(
-    network: CosmosNetworkConfig,
+    ctx: Omit<MsgContext, 'subs' | 'doc'> & { subs?: Substitutions },
     contract: string,
     type: 'instantiate' | 'migrate' | `execute:${string}` | `query:${string}`,
-    placeholders: Record<string, any> = {},
   ): Promise<{ msg: any, funds: Coin[] }> {
-    // TODO: substitute placeholders
-    // TODO: funds
     const filepath = path.join(this.root, '.cwp', 'msgs.yml');
     const doc = z.parse(MsgsSchema, unmarshal(YAML.parse((await fs.readFile(filepath, 'utf8').catch(() => '')))));
+    let raw: { msg: any, funds?: CoinSpec } | undefined;
     if (type === 'instantiate') {
       if (!doc[contract]?.instantiate) return { msg: undefined, funds: [] };
-      return {
-        ...doc[contract].instantiate,
-        funds: [],
-      };
+      raw = doc[contract]?.instantiate;
     }
     if (type === 'migrate') {
       if (!doc[contract]?.migrate) return { msg: undefined, funds: [] };
-      return {
-        ...doc[contract].migrate,
-        funds: [],
-      };
+      raw = doc[contract]?.migrate;
     }
     if (type.startsWith('execute:')) {
       const data = doc[contract]?.execute?.find(e => e.name === type.split(':')[1]);
       if (!data) return { msg: undefined, funds: [] };
-      return {
-        ...data,
-        funds: [],
-      };
+      raw = data;
     }
     if (type.startsWith('query:')) {
       const data = doc[contract]?.query?.find(q => q.name === type.split(':')[1]);
       if (!data) return { msg: undefined, funds: [] };
-      return {
-        ...data,
-        funds: [],
-      };
+      raw = data;
     }
-    throw new Error(`Invalid message type: ${type}`);
+    if (!raw) throw `Invalid message type: ${type}`;
+
+    let funds: Coin[] = [];
+    if (raw.funds === 'prompt') {
+      funds = await inquireFunds({});
+    } else if (raw.funds) {
+      funds = parseFunds(raw.funds);
+    }
+
+    return {
+      msg: await processMsg({ ...ctx, subs: ctx.subs ?? {}, doc: doc[contract] }, raw.msg),
+      funds,
+    };
   }
 
   async validateMsg(contract: string, kind: 'instantiate' | 'migrate' | 'execute' | 'query', msg: any) {

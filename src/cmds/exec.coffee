@@ -64,7 +64,7 @@ execAddress = ({ proj, network, contract, opts... }) ->
             .sort()
             .map (m) -> { name: m, value: m }
         multiple: false
-    data = await proj.getMsg(network, contract, "execute:#{opts.msg}")
+    data = await proj.getMsg({ network, signer }, contract, "execute:#{opts.msg}")
     { data..., addr }
   await proj.validateMsg contract, 'execute', msg if proj and opts.validate
 

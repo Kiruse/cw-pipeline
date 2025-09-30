@@ -49,7 +49,7 @@ export default (prog) ->
       else
         error 'Must specify code ID when not in a project'
 
-      {msg, funds} = await proj.getMsg network, contract, 'instantiate'
+      {msg, funds} = await proj.getMsg({ network, signer }, contract, 'instantiate')
       error 'No instantiate message found in .cwp/msgs.yml' unless msg
       await proj.validateMsg contract, 'instantiate', msg if options.validate
 

@@ -9,13 +9,11 @@ import { bech32 } from '@scure/base';
 import { snakeCase } from 'case-anything';
 import { Option } from 'commander';
 import fs from 'fs/promises';
-import { select as selectpro } from 'inquirer-select-pro';
 import * as JsonSchema from 'jsonschema';
 import path from 'path';
 import YAML from 'yaml';
 import { loadConfig } from './config';
 import { Project } from './project';
-import { getFiles } from './templating';
 import { DATADIR, omit } from './utils';
 
 type PromptValue<P extends Prompt<any, any>> = P extends Prompt<infer T, any> ? T : never;
@@ -210,43 +208,17 @@ export async function inquireEditor(
   return await inquire(editor, promptConfig, options);
 }
 
-export interface InquireArtifactsOptions {
-  promptName?: string;
-  message?: string;
+export async function inquireFunds(
+  promptConfig: Omit<PromptConfig<typeof input>, 'message'> & { name?: string, volatile?: boolean, options?: Record<string, any>, message?: string },
+  options?: Record<string, any>,
+): Promise<Coin[]> {
+  const s = await inquire(input, {
+    ...promptConfig,
+    message: promptConfig.message ?? 'Enter funds',
+  }, options);
+  const splitter = s.includes(',') ? ',' : ' ';
+  return parseFunds(s.split(splitter).map(f => f.trim()));
 }
-
-export async function inquireArtifacts(project: Project, opts: InquireArtifactsOptions = {}) {
-  const dir = `${project.root}/artifacts`;
-  const files = await getFiles(dir);
-  return await inquire(selectpro, {
-    name: opts.promptName ?? 'artifact',
-    message: opts.message ?? 'Choose an artifact',
-    options: (input) => files
-      .filter(f => !input || f.includes(input))
-      .sort()
-      .map(f => ({ name: f.replace(`${dir}/`, '').replace(/\.wasm$/, ''), value: f })),
-    multiple: false,
-  });
-}
-
-export interface InquireContractsOptions {
-  promptName?: string;
-  message?: string;
-}
-
-export async function inquireContracts(project: Project, opts: InquireContractsOptions = {}) {
-  const contracts = await project.getContractNames();
-  return await inquire(selectpro, {
-    name: opts.promptName ?? 'contract',
-    message: opts.message ?? 'Choose a contract',
-    options: (input) => contracts
-      .filter(c => !input || c.includes(input))
-      .sort()
-      .map(c => ({ name: c, value: c })),
-    multiple: false,
-  });
-}
-
 
 export function getContractFromPath(filepath: string) {
   filepath = path.normalize(filepath);

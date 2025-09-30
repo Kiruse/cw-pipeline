@@ -74,4 +74,49 @@ The decentralized world is massive. These commands are designed to help you navi
 - `network`: Show information about a network.
 - `tx`: Show information about a transaction.
 - `cw2`: Show CW2-standard contract information, if available.
+- `project`: Various sub-sub-commands to show information around the current project. A project is detected by searching for a `Cargo.toml` in the current directory's ancestry.
 - `drand`: Show information about the DRAND randomness beacon. For example, a network's metadata or the latest round.
+
+# Message Templating
+When running the `instantiate`, `migrate`, `execute`, or `query` commands, you require a message specific to your smart contract. Often, you have a schema, but if you don't, you can pass the `--no-validate` flag to skip validation.
+
+You can define messages for your smart contracts in the `.cwp/msgs.yml` file relative to project root. These messages take placeholders which *cwp* will substitute. There are two kinds of placeholders: variables and function invocations.
+
+## Variables
+**Variables** take this form: `$(variable_name:type)`. When omitted, `type` is `string`, which should cover most generic cases. However, specifying a `type` allows *cwp* to prompt more directly and apply validations. The following types currently exist:
+
+- `addr`: Prompt the user for an address. Validated for the current network.
+- Many more types are in the works.
+
+## Functions
+**Function calls* take this form: `$fn_name(arg1, arg2, ...)`. Function calls can be nested, e.g. `$bin($json($tpl(my_template)))` will reference the template `my_template`, convert it to a JSON string, and finally convert it to a base64 string before filling it into the original message. The following functions currently exist:
+
+- `$bin(content)`: Converts its contents to base64.
+- `$signer()`: Inserts the current signer's address.
+- `$json(content)`: Converts its contents to a JSON string.
+- `$tpl(name)`: Evaluates & inserts the named template.
+
+## Templates
+The `$tpl(...)` function allows reusing message components. Templates can be defined either as part of a specific message directly or as part of the entire contract. When template names clash, the local one takes precedence.
+
+Templates are evaluated exactly like messages. Templates are recursive, meaning you can reference templates within templates.
+
+**Example:**
+
+```yml
+autobond:
+  execute:
+  - name: Process Queue
+    msg:
+      process:
+        payload: $bin($json($tpl(payload_primary)))
+    tpl:
+      payload_primary:
+        primary: {}
+```
+
+This will convert `primary: {}` into a base64-encoded JSON string such that the resulting message is:
+
+```json
+{"process":{"payload":"eyJwcmltYXJ5Ijp7fX0="}}
+```
