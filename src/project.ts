@@ -8,7 +8,7 @@ import { isDir, isFile } from './templating';
 import { BigintMarshalUnit, DateMarshalUnit, extendDefaultMarshaller } from '@kiruse/marshal';
 import { Coin } from '@apophis-sdk/core/types.sdk.js';
 
-const { marshal, unmarshal } = extendDefaultMarshaller([
+export const { marshal, unmarshal } = extendDefaultMarshaller([
   BigintMarshalUnit,
   DateMarshalUnit,
 ]);
@@ -178,13 +178,20 @@ export class Project {
     return z.parse(AddrsSchema, doc);
   }
 
+  /** Get a list of prepared message names for either executions or queries. */
+  async getMsgs(contract: string, type: 'execute' | 'query') {
+    const filepath = path.join(this.root, '.cwp', 'msgs.yml');
+    const doc = z.parse(MsgsSchema, unmarshal(YAML.parse((await fs.readFile(filepath, 'utf8').catch(() => '')))));
+    return doc[contract]?.[type]?.map(m => m.name);
+  }
+
   /** Load the message for the given contract and type. If no message is found, the `msg` field will
    * be `undefined`.
    */
   async getMsg(
     network: CosmosNetworkConfig,
     contract: string,
-    type: 'instantiate' | 'migrate' | `execute.${string}` | `query.${string}`,
+    type: 'instantiate' | 'migrate' | `execute:${string}` | `query:${string}`,
     placeholders: Record<string, any> = {},
   ): Promise<{ msg: any, funds: Coin[] }> {
     // TODO: substitute placeholders
@@ -205,19 +212,19 @@ export class Project {
         funds: [],
       };
     }
-    if (type.startsWith('execute.')) {
-      const data = doc[contract]?.execute?.find(e => e.name === type.split('.')[1]);
+    if (type.startsWith('execute:')) {
+      const data = doc[contract]?.execute?.find(e => e.name === type.split(':')[1]);
       if (!data) return { msg: undefined, funds: [] };
       return {
-        ...data?.msg,
+        ...data,
         funds: [],
       };
     }
-    if (type.startsWith('query.')) {
-      const data = doc[contract]?.query?.find(q => q.name === type.split('.')[1]);
+    if (type.startsWith('query:')) {
+      const data = doc[contract]?.query?.find(q => q.name === type.split(':')[1]);
       if (!data) return { msg: undefined, funds: [] };
       return {
-        ...data?.msg,
+        ...data,
         funds: [],
       };
     }
@@ -225,6 +232,7 @@ export class Project {
   }
 
   async validateMsg(contract: string, kind: 'instantiate' | 'migrate' | 'execute' | 'query', msg: any) {
+    if (!msg) throw `Missing message`;
     const variants = [`${contract.replace(/_/g, '-')}`, `${contract.replace(/-/g, '_')}`];
     const filepaths = variants.map(variant => `${this.root}/contracts/${variant}/schema/${variant}.json`);
     for (const filepath of filepaths) {
