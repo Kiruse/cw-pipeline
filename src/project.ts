@@ -252,7 +252,7 @@ export class Project {
     return await fs.readdir(path.join(this.root, 'contracts'));
   }
 
-  async addCodeId(network: CosmosNetworkConfig, contract: string, codeId: bigint) {
+  async addCodeId(network: CosmosNetworkConfig, contract: string, codeId: bigint | number) {
     await fs.mkdir(`${this.root}/.cwp`, { recursive: true });
     const contents = await fs.readFile(`${this.root}/.cwp/codeIds.yml`, 'utf8').catch(() => '');
     const doc = YAML.parse(contents) ?? {};
@@ -262,7 +262,7 @@ export class Project {
     await fs.writeFile(`${this.root}/.cwp/codeIds.yml`, YAML.stringify(doc, { indent: 2 }));
   }
 
-  async addContractAddr(network: CosmosNetworkConfig, contract: string, name: string, codeId: bigint, address: string) {
+  async addContractAddr(network: CosmosNetworkConfig, contract: string, name: string, codeId: bigint | number, address: string) {
     await fs.mkdir(`${this.root}/.cwp`, { recursive: true });
     const contents = await fs.readFile(`${this.root}/.cwp/addrs.yml`, 'utf8').catch(() => '');
     const doc = YAML.parse(contents) ?? {};
@@ -270,6 +270,15 @@ export class Project {
     doc[network.name][contract] ??= [];
     doc[network.name][contract].push({ name, address, codeId, timestamp: new Date() });
     await fs.writeFile(`${this.root}/.cwp/addrs.yml`, YAML.stringify(doc, { indent: 2 }));
+  }
+
+  async updateContractAddr(network: CosmosNetworkConfig, address: string, codeId: bigint | number) {
+    const doc = await this.loadAddrs();
+    const data = Object.values(doc[network.name]).flat().find(c => c.address === address);
+    if (!data) throw new Error(`Address ${address} not found on ${network.name}`);
+    data.codeId = codeId;
+    data.timestamp = new Date();
+    await fs.writeFile(`${this.root}/.cwp/addrs.yml`, YAML.stringify(marshal(doc), { indent: 2 }));
   }
 
   async getDeploymentConfig() {

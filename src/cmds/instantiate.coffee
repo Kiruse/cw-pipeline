@@ -17,10 +17,7 @@ export default (prog) ->
     .description 'Instantiate a Smart Contract on the blockchain.'
     .option '-m, --msg <path>', 'Path to the YAML file containing the init message. Defaults to msg.init.yml in the current directory.'
     .option '--no-validate', 'Do not validate the init message against the schema. Defaults to validating.'
-    .addOption(
-      new Option '-l, --label <label>', 'Label for the contract. Defaults to a generic label, but I recommend setting one for legibility.'
-        .default 'Generic Contract'
-    )
+    .option '-l, --label <label>', 'Label for the contract.'
     .addOption NetworkOption()
     .addOption MainnetOption()
     .addOption FundsOption()
@@ -69,7 +66,7 @@ export default (prog) ->
       try
         await log network, "Instantiating contract..."
         addr = await CosmWasm.instantiate { network, signer, codeId, label, admin, msg, funds }
-        await proj.addContractAddr network, contract, codeId, addr
+        await proj.addContractAddr network, contract, label, codeId, addr
         console.log "Contract address: #{addr}"
         await log network, "Instantiated contract at #{addr}"
       catch err

@@ -58,6 +58,7 @@ export default (prog) ->
         await log network, "Migrating contract..."
         result = await CosmWasm.migrate network, signer, contractAddr, codeId, msg
         console.log "Migration successful"
+        await proj.updateContractAddr network, contractAddr, codeId
         await log network, "Migrated contract #{contract} to code ID #{codeId}"
       catch err
         await log network, err
