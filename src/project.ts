@@ -163,10 +163,7 @@ export class Project {
   }
 
   async getDeployedContract(network: CosmosNetworkConfig, name: string) {
-    const doc = await this.loadAddrs();
-    const data = Object.values(doc[network.name]).flat().find(c => c.name === name);
-    if (!data) return;
-    return data;
+    return (await this.getDeployedContracts(network)).find(c => c.name === name);
   }
 
   async loadCodeIds() {

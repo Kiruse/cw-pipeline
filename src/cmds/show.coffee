@@ -1,8 +1,12 @@
 import { input } from '@inquirer/prompts'
 import { Cosmos } from '@apophis-sdk/cosmos'
 import { CosmWasm } from '@apophis-sdk/cosmwasm'
+import { select } from 'inquirer-select-pro'
+import fs from 'fs/promises'
+import path from 'path'
 import YAML from 'yaml'
 import { drand } from '~/drand'
+import { Project } from '~/project'
 import { NetworkOption, MainnetOption, getNetworkConfig, inquire } from '~/prompting'
 
 ###* @param {import('commander').Command} prog ###
@@ -64,6 +68,7 @@ export default (prog) ->
       process.exit 0
 
   addDrand cmd
+  addProj cmd
 
 ###* @param {import('commander').Command} cmd ###
 addDrand = (cmd) ->
@@ -114,4 +119,63 @@ addDrand = (cmd) ->
         console.log JSON.stringify res, null, 2
       else
         console.log YAML.stringify res, indent: 2
+      process.exit 0
+
+###* @param {import('commander').Command} cmd ###
+addProj = (cmd) ->
+  subcmd = cmd.command 'project'
+    .description 'Show information about the current project.'
+  subcmd.command 'artifacts'
+    .description 'List the contracts in the current project.'
+    .addOption NetworkOption()
+    .action (opts) ->
+      proj = await Project.find()
+      files = await fs.readdir path.join(proj.root, 'artifacts')
+      files = files
+        .filter (f) -> f.endsWith '.wasm'
+        .sort()
+      console.log YAML.stringify files, { indent: 2 }
+      process.exit 0
+  subcmd.command 'stored'
+    .description 'List the stored contracts in the current project.'
+    .addOption NetworkOption()
+    .addOption MainnetOption()
+    .action (opts) ->
+      proj = await Project.find()
+      network = await getNetworkConfig opts
+      console.log YAML.stringify (await proj.getStoredContracts(network)), { indent: 2 }
+      process.exit 0
+  subcmd.command 'deployed'
+    .description 'List the deployed contracts in the current project.'
+    .addOption NetworkOption()
+    .addOption MainnetOption()
+    .action (opts) ->
+      proj = await Project.find()
+      network = await getNetworkConfig opts
+      contracts = await proj.getDeployedContracts(network)
+      contracts = contracts.map (c) -> "#{c.name} (#{c.contract})"
+      console.log YAML.stringify contracts, { indent: 2 }
+      process.exit 0
+  subcmd.command 'contract'
+    .description 'Show information about a specific contract in the current project.'
+    .argument '[name]', 'The name of the contract to show.'
+    .addOption NetworkOption()
+    .addOption MainnetOption()
+    .action (name, opts) ->
+      proj = await Project.find()
+      network = await getNetworkConfig opts
+      unless name
+        contracts = await proj.getDeployedContracts(network)
+        contract = await inquire select,
+          name: 'contract'
+          message: 'Choose a contract'
+          options: (input) ->
+            contracts
+              .filter (c) -> not input.trim() or c.includes(input.trim())
+              .sort()
+              .map (c) -> { name: c.name, value: c }
+          multiple: false
+        console.log YAML.stringify contract, { indent: 2 }
+      else
+        console.log YAML.stringify (await proj.getDeployedContract(network, name)), { indent: 2 }
       process.exit 0
