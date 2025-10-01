@@ -1,11 +1,10 @@
 import { confirm, input, select } from '@inquirer/prompts'
-import { $ as $$ } from 'bun'
 import fs from 'fs/promises'
 import os from 'os'
 import path from 'path'
 import { inquire } from '~/prompting'
 import { copy, move, substitutePlaceholders, getSection, getWorkspaceDeps } from '~/templating'
-import { ASSETSDIR } from '~/utils'
+import { ASSETSDIR, $exec as $$ } from '~/utils'
 
 ###* @param {import('commander').Command} prog ###
 export default (prog) ->

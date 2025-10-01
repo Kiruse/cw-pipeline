@@ -1,4 +1,4 @@
-import { $ } from 'bun'
+import { $exec as $$ } from '~/utils'
 
 ###* @param {import('commander').Command} prog ###
 export default (prog) ->

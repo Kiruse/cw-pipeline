@@ -10,7 +10,7 @@ await rimraf BUILDDIR
 await fs.mkdir BUILDDIR, recursive: true
 
 output = await Bun.build
-  target: 'bun'
+  target: 'node'
   entrypoints: [
     'src/cw-pipeline.coffee'
   ]
@@ -20,7 +20,6 @@ output = await Bun.build
   define:
     'process.env.VERSION': JSON.stringify VERSION
   minify: true
-  sourcemap: 'linked'
   outdir: 'build'
 unless output.success
   console.error YAML.stringify output.logs

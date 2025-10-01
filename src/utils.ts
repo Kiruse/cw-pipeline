@@ -21,7 +21,7 @@ export type Logs = {
   }[];
 }[];
 
-export const ASSETSDIR = path.resolve(import.meta.dir, '../assets');
+export const ASSETSDIR = path.resolve(__dirname, '../assets');
 export const DATADIR   = path.resolve(os.homedir(), '.cw-pipeline');
 
 export function error(...msgs: any[]): never {
@@ -73,6 +73,30 @@ export async function exec(cmd: string, args: string[], opts: { cwd?: string } =
     exec(`${cmd} ${args.join(' ')}`, opts, (err, stdout, stderr) => {
       if (err) reject(err);
       else resolve({stdout, stderr});
+    });
+  });
+}
+
+// Custom template literal for executing shell commands using child_process
+export function $exec(strings: TemplateStringsArray, ...values: any[]): Promise<void> {
+  const { exec } = require('child_process');
+
+  // Build the command string by interpolating values
+  let command = '';
+  for (let i = 0; i < strings.length; i++) {
+    command += strings[i];
+    if (i < values.length) {
+      command += String(values[i]);
+    }
+  }
+
+  return new Promise<void>((resolve, reject) => {
+    exec(command, { stdio: 'inherit' }, (error: any) => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve();
+      }
     });
   });
 }

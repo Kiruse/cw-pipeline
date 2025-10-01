@@ -1,9 +1,8 @@
 import { snakeCase } from 'case-anything'
-import { $ as $$ } from 'bun'
 import { basename } from 'path'
 import { Project } from '~/project'
 import { copy, substitutePlaceholders, tryStat, getCrateName } from '~/templating'
-import { ASSETSDIR } from '~/utils'
+import { ASSETSDIR, $exec as $$ } from '~/utils'
 
 ###* @param {import('commander').Command} prog ###
 export default (prog) ->
