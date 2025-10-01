@@ -223,12 +223,14 @@ export class Project {
       raw = doc[contract]?.migrate;
     }
     if (type.startsWith('execute:')) {
-      const data = doc[contract]?.execute?.find(e => e.name === type.split(':')[1]);
+      const name = type.slice(8);
+      const data = doc[contract]?.execute?.find(e => e.name === name);
       if (!data) return { msg: undefined, funds: [] };
       raw = data;
     }
     if (type.startsWith('query:')) {
-      const data = doc[contract]?.query?.find(q => q.name === type.split(':')[1]);
+      const name = type.slice(6);
+      const data = doc[contract]?.query?.find(q => q.name === name);
       if (!data) return { msg: undefined, funds: [] };
       raw = data;
     }
