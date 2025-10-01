@@ -9,15 +9,44 @@ Currently, *CW Pipeline* requires [Bun](https://bun.sh/), but eventually, I aim 
 ## Configuration
 There are two configuration files used by *CW Pipeline*:
 - `~/.cw-pipeline/config.yml` is used to store your user-specific settings.
-- `cwp.yml` is used to store project-specific settings. These override the user-specific ones.
+- `./cwp/config.yml` in the project root is used to store project-specific settings. These override the user-specific ones.
 
 The configuration format is still a work in progress, but currently follows the following pattern:
 ```yaml
 <network-name>:
   endpoints?:
-    rest?: <rest-endpoint>
-    rpc?: <rpc-endpoint>
-    ws?: <websocket-endpoint>
+    rest?: <url>
+    rpc?: <url>
+    ws?: <url>
+  network?:
+    chainId: <string>
+    name: <string>
+    prettyName?: <string>
+    addressPrefix: <string>
+    assets?: <asset[]>
+    gas?:
+    - asset: <asset>
+      minFee?: <number>
+      lowPrice?: <number>
+      avgPrice: <number>
+      highPrice?: <number>
+      flatGasOffset?: <number>
+      gasMultiplier?: <number, default 1.1>
+    gasFactor?: <number>
+```
+
+`asset` is:
+```yaml
+denom: <string>
+name: <string>
+cgid?: <string>
+cmcid?: <string>
+decimals?: <number>
+display?:
+  denom: <string>
+  symbol?: <string>
+  decimals?: <number>
+  aliases?: <string[]>
 ```
 
 Where a `?` indicates that the option is optional.
@@ -31,19 +60,6 @@ Various commands can substitute options with environment variables. These comman
 - `CWP_PRIVATE_KEY`: Private key to use for signing transactions.
 
 Note that, currently, the `CWP_MNEMONIC` and `CWP_PRIVATE_KEY` variables are the only way to define your signer. For the sake of operational security, I strongly recommend supplying either of these values just-in-time, e.g. through a CI/CD secret manager or an encrypted-at-rest keyring. Never store credentials in unencrypted project files such as a `.env` file.
-
-# Roadmap
-- [x] Contract instantiation
-- [x] Project scaffolding (single contract)
-- [x] Project scaffolding (monorepo)
-- [x] Multi-chain support (Chain Registry)
-- [x] Multi-chain support (Custom)
-- [ ] DevEnv setup (WIP)
-- [x] Generate schemas as part of the production build process.
-- [ ] Secret storage.
-- [ ] Build with chain-specific features (e.g. standard *TokenFactory* vs. Injective *TokenFactory*)
-- [ ] Smart Contract query & execution TS codegen.
-- [ ] Unit testing with [cw-orchestrator](https://orchestrator.abstract.money/) and/or [cw-simulate](https://github.com/cosmology-tech/cw-simulate).
 
 # Commands
 CW-Pipeline uses a CLI library with built-in introspection, so you can always call `cw-pipeline <command> --help` to get more information about each command; which subcommands, arguments & options it has; and a short description of what it does.

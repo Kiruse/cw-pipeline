@@ -63,8 +63,7 @@ export async function loadConfig(proj?: Project) {
 
   const cfgs = await Promise.all([
     tryReadFile(path.join(homedir(), '.cw-pipeline', 'config.yml')).catch(() => ({})),
-    proj ? tryReadFile(path.join(proj.root, 'cwp.yml')).catch(() => ({})) : {},
-    proj && proj.project ? tryReadFile(path.join(proj.projectPath, 'cwp.yml')).catch(() => ({})) : {},
+    proj ? tryReadFile(path.join(proj.root, '.cwp', 'config.yml')).catch(() => ({})) : {},
   ]);
 
   const data = z.parse(ConfigSchema, Object.assign({}, ...cfgs));
