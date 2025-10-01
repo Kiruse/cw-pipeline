@@ -39,11 +39,15 @@ export const SequenceOption = (flags = '-s, --sequence <number>') =>
 export const ContractOption = (flags = '-c, --contract <contract>') =>
   new Option(flags, 'Contract address or name from the deployments config. When omitted, prompted.');
 
-export function parseFunds(values: string[]): Coin[] {
+export function parseFunds(values: (string | Coin)[]): Coin[] {
   return values.map(value => {
-    const [, amount, denom] = value.match(/^(\d+)([a-zA-Z]+)$/) ?? [];
-    if (!amount || !denom) throw new Error('Invalid funds format. Must be a list of base coin amounts, e.g. 1untrn, without decimals.');
-    return Cosmos.coin(BigInt(amount), denom);
+    if (typeof value === 'string') {
+      const [, amount, denom] = value.match(/^(\d+)([a-zA-Z]+)$/) ?? [];
+      if (!amount || !denom) throw new Error('Invalid funds format. Must be a list of base coin amounts, e.g. 1untrn, without decimals.');
+      return Cosmos.coin(BigInt(amount), denom);
+    } else {
+      return value;
+    }
   });
 }
 
