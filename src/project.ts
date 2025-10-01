@@ -174,7 +174,14 @@ export class Project {
   }
 
   async getDeployedContract(network: CosmosNetworkConfig, name: string) {
-    return (await this.getDeployedContracts(network)).find(c => c.name === name);
+    const contracts = await this.getDeployedContracts(network);
+    const exact = contracts.find(c => c.name === name);
+    if (exact) return exact;
+
+    const partials = contracts.filter(c => c.name.toLowerCase().includes(name.toLowerCase()));
+    if (partials.length === 0) throw `Contract ${name} not found on ${network.name}`;
+    if (partials.length === 1) return partials[0];
+    throw `Multiple contracts found for ${name} on ${network.name}`;
   }
 
   async loadCodeIds() {

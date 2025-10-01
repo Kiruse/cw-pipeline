@@ -31,15 +31,16 @@ export default (prog) ->
       else if proj
         unless contract
           contracts = await proj.getDeployedContracts(network)
-          {contract, name: contractName, address: contractAddr} = await inquire select,
+          contract = await inquire select,
             name: 'contract'
             message: 'Select a contract to migrate'
             options: (input) ->
               contracts
                 .filter (c) -> not input.trim() or c.includes(input.trim())
                 .sort()
-                .map (c) -> { name: c.name, value: c }
+                .map (c) -> { name: c.name, value: c.name }
             multiple: false
+        {contract, name: contractName, address: contractAddr} = await proj.getDeployedContract network, contract
         await proj.getLastCodeId network, contract
       else
         error 'Must specify code ID when not in a project'

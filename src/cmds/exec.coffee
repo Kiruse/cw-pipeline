@@ -15,22 +15,19 @@ export default (prog) ->
     .addOption NetworkOption()
     .addOption MainnetOption()
     .addOption FundsOption()
-    .option '-c, --contract <contract>', 'In a project, this may be the name of a deployed contract. Otherwise, it is the contract\'s address.'
     .option '-m, --msg <path_or_name>', 'In a project, this may be the name of the message to execute as found in your .cwp/msgs.yml file. Otherwise, it is the path to the YAML file containing your message.'
     .option '--no-validate', 'Whether to skip message validation. Defaults to validating.'
-    .action (opts) ->
+    .argument '[contract]', 'Contract name (if in a project) or address to execute. When omitted, prompts for a contract.'
+    .action (contract, opts) ->
       network = await getNetworkConfig opts
       proj = await Project.find().catch(=>)
 
-      # if an address, regardless of monorepo
-      if isAddress opts.contract
-        error 'Msg must be a filepath when executing on a contract address' unless await isFile opts.msg
-        return await execAddress { opts..., proj, network }
+      return await execAddress { opts..., contract, proj, network } if isAddress contract
       error 'Must specify a contract address when not in a project' unless proj
 
-      unless opts.contract
+      unless contract
         contracts = await proj.getDeployedContracts(network)
-        opts.contract = await inquire select,
+        contract = await inquire select,
           name: 'contract'
           message: 'Choose a contract to execute'
           options: (input) ->
@@ -39,22 +36,22 @@ export default (prog) ->
               .sort()
               .map (c) -> { name: c.name, value: c.name }
           multiple: false
-      await execAddress { opts..., proj, network }
+      await execAddress { opts..., contract, proj, network }
 
 execAddress = ({ proj, network, contract, opts... }) ->
   signer = await getSigner()
   await signer.connect [network]
 
-  isContractFile = await isFile contract
   contractName = contract
-  {msg, funds, addr} = if isContractFile
-    msg: await fs.readFile opts.msg, 'utf8'
-    addr: contract
-    funds: []
+  {msg, funds, addr} = if isAddress contract
+    error 'Msg must be a filepath when executing on a contract address' unless await isFile opts.msg
+    msg = await fs.readFile opts.msg, 'utf8'
+    { msg, addr: contract, funds: [] }
   else
     {address: addr, contract, name: contractName} = await proj.getDeployedContract(network, contract)
     unless opts.msg
       msgs = await proj.getMsgs contract, 'execute'
+      error "No execute messages found for #{contract} in .cwp/msgs.yml" unless msgs
       opts.msg = await inquire select,
         name: 'msg.exec'
         message: 'Choose a prepared execute message'
