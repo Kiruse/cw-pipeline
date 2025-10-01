@@ -67,11 +67,14 @@ execAddress = ({ proj, network, contract, opts... }) ->
 
   funds = parseFunds opts.funds ? funds ? []
 
-  if addr is contractName
-    console.log "Contract at #{contractName}"
-  else
-    console.log "Contract #{contractName} (#{contract}) at #{addr}"
-  console.log "Message:\n#{YAML.stringify marshal(msg), { indent: 2 }}"
+  report = {
+    name: contractName
+    contract
+    addr
+    msg
+    funds: funds.map((f) -> "#{f.amount}#{f.denom}").join(', ')
+  }
+  console.log YAML.stringify marshal(report), { indent: 2 }
   error 'User aborted execution' unless await confirm 'Continue?'
 
   try

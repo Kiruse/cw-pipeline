@@ -3,7 +3,7 @@ import fs from 'fs/promises'
 import path from 'path'
 import { select } from 'inquirer-select-pro'
 import YAML from 'yaml'
-import { Project } from '~/project'
+import { Project, marshal } from '~/project'
 import { getNetworkConfig, inquire, inquireEditor, isAddress, NetworkOption, MainnetOption } from '~/prompting.js'
 import { isFile } from '~/templating'
 import { error, log } from '~/utils'
@@ -62,16 +62,17 @@ queryAddress = ({ proj, network, contract, opts... }) ->
     { data..., addr }
   await proj.validateMsg contract, 'query', msg if proj and opts.validate
 
-  if addr is contractName
-    console.log "Contract at #{contractName}"
-  else
-    console.log "Contract #{contractName} (#{contract}) at #{addr}"
-  console.log "Message:\n#{YAML.stringify msg, { indent: 2 }}"
+  report = {
+    name: contractName
+    contract
+    addr
+    msg
+  }
+  console.log "Query:\n#{YAML.stringify(marshal(report), { indent: 2 })}"
 
   try
     result = await CosmWasm.query.smart network, addr, msg
-    console.log YAML.stringify result, indent: 2
-    await log network, result
+    console.log "Response:\n#{YAML.stringify(marshal(result), { indent: 2 })}"
     process.exit 0
   catch err
     await log network, err
