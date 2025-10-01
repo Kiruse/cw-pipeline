@@ -1,14 +1,9 @@
 import { input } from '@inquirer/prompts'
-import { isFile } from '~/templating'
 import { Cosmos } from '@apophis-sdk/cosmos'
 import { CosmWasm } from '@apophis-sdk/cosmwasm'
-import { Option } from 'commander'
-import fs from 'fs/promises'
 import { select } from 'inquirer-select-pro'
-import path from 'path'
-import YAML from 'yaml'
 import { Project } from '~/project'
-import { FundsOption, getNetworkConfig, getSigner, inquireEditor, NetworkOption, MainnetOption, parseFunds, inquire } from '~/prompting.js'
+import { FundsOption, getNetworkConfig, getSigner, NetworkOption, MainnetOption, parseFunds, inquire } from '~/prompting.js'
 import { error, log } from '~/utils.js'
 
 ###* @param {import('commander').Command} prog ###
@@ -21,7 +16,7 @@ export default (prog) ->
     .addOption NetworkOption()
     .addOption MainnetOption()
     .addOption FundsOption()
-    .addArgument '[contract]', 'Contract to instantiate. Can either be a code ID or a name corresponding to a contract in your monorepo.'
+    .argument '[contract]', 'Contract to instantiate. Can either be a code ID or a name corresponding to a contract in your monorepo.'
     .action (contract, options) ->
       network = await getNetworkConfig options
       signer = await getSigner()

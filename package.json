@@ -1,13 +1,14 @@
 {
   "name": "cw-pipeline",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "module": "src/index.coffee",
   "type": "module",
   "scripts": {
     "dev": "bun run --preload bun-coffeescript/register --preload ./env.coffee src/cw-pipeline.coffee",
-    "build": "bun run --preload bun-coffeescript/register ./build.coffee"
+    "build": "bun run --preload bun-coffeescript/register ./build.coffee",
+    "prepublish": "bun run build"
   },
-  "bin": "./bin/cw-pipeline",
+  "bin": "./bin/cwp",
   "dependencies": {
     "@apophis-sdk/core": "^0.3.11",
     "@apophis-sdk/cosmos": "^0.3.11",
@@ -24,7 +25,6 @@
     "commander": "^11.1.0",
     "inquirer-select-pro": "^1.0.0-alpha.9",
     "jsonschema": "^1.4.1",
-    "rxjs": "^7.8.1",
     "semver": "^7.5.4",
     "valibot": "^1.1.0",
     "yaml": "^2.3.4"
