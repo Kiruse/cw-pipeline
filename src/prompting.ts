@@ -3,7 +3,7 @@ import { Coin } from '@apophis-sdk/core/types.sdk.js';
 import { fromHex } from '@apophis-sdk/core/utils.js';
 import { Cosmos } from '@apophis-sdk/cosmos';
 import { LocalSigner } from '@apophis-sdk/cosmos/local-signer.js';
-import { confirm, editor, input, select } from '@inquirer/prompts';
+import { confirm, editor, input, number, select } from '@inquirer/prompts';
 import type { Prompt } from '@inquirer/type';
 import { bech32 } from '@scure/base';
 import { snakeCase } from 'case-anything';
@@ -208,13 +208,32 @@ export async function inquireEditor(
   return await inquire(editor, promptConfig, options);
 }
 
+export type InquireFundsConfig<P extends Prompt<any, any>> = Omit<PromptConfig<P>, 'message'> & {
+  name?: string;
+  message?: string;
+  volatile?: boolean;
+  options?: Record<string, any>;
+}
+
+export async function inquireFunds(promptConfig: InquireFundsConfig<typeof input>, options?: Record<string, any>): Promise<Coin[]>;
+export async function inquireFunds(promptConfig: InquireFundsConfig<typeof number> & { denom?: string }, options?: Record<string, any>): Promise<Coin[]>;
 export async function inquireFunds(
-  promptConfig: Omit<PromptConfig<typeof input>, 'message'> & { name?: string, volatile?: boolean, options?: Record<string, any>, message?: string },
+  { denom, ...promptConfig }: any,
   options?: Record<string, any>,
 ): Promise<Coin[]> {
+  if (denom) {
+    const amount = await inquire(number, {
+      ...promptConfig,
+      message: promptConfig.message ?? `Enter amount in ${denom}`,
+      required: true,
+    }, options);
+    if (!amount) throw new Error('Amount is required');
+    return [Cosmos.coin(BigInt(amount), denom)];
+  }
+
   const s = await inquire(input, {
     ...promptConfig,
-    message: promptConfig.message ?? 'Enter funds',
+    message: promptConfig.message ?? 'Enter funds, e.g. "1untrn, 2uusdc"',
   }, options);
   const splitter = s.includes(',') ? ',' : ' ';
   return parseFunds(s.split(splitter).map(f => f.trim()));

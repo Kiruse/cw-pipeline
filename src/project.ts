@@ -9,25 +9,35 @@ import { MsgContext, processMsg, Substitutions } from './messaging';
 import { inquireFunds, parseFunds, validateJson } from './prompting';
 import { isDir, isFile } from './templating';
 
-type CoinSpec = string[] | 'prompt';
+type CoinSpec = string[] | 'prompt' | `prompt:${string}`;
 
 export const { marshal, unmarshal } = extendDefaultMarshaller([
   BigintMarshalUnit,
   DateMarshalUnit,
 ]);
 
+const TplsSchema = z.record(z.string(), z.any());
+const FundsSchema = z.union([
+  z.array(z.string()),
+  z.custom<'prompt' | `prompt:${string}`>(value => value === 'prompt' || (typeof value === 'string' && value.startsWith('prompt:'))),
+]);
+
 const DeploymentConfigSchema = z.object({
   id: z.optional(z.string()),
   contract: z.string(),
-  instantiate: z.optional(z.any()),
-  migrate: z.optional(z.any()),
+  instantiate: z.optional(z.object({
+    msg: z.any(),
+    funds: z.optional(FundsSchema),
+    tpls: z.optional(TplsSchema),
+  })),
+  migrate: z.optional(z.object({
+    msg: z.any(),
+    tpls: z.optional(TplsSchema),
+  })),
   execute: z.optional(z.array(z.object({
     name: z.string(),
     msg: z.any(),
-    funds: z.optional(z.union([
-      z.array(z.string()),
-      z.literal('prompt'),
-    ])),
+    funds: z.optional(FundsSchema),
     /** Templates for use in the messages. These are typically used with `$bin()` or `$json()`
      * to populate nested objects that will be encoded & embedded within the message.
      */
@@ -67,17 +77,12 @@ const AddrsSchema = z.record(
   )
 );
 
-const TplsSchema = z.record(z.string(), z.any());
-
 const MsgsSchema = z.record(
   z.string(), // contract name
   z.object({
     instantiate: z.optional(z.object({
       msg: z.any(),
-      funds: z.optional(z.union([
-        z.array(z.string()),
-        z.literal('prompt'),
-      ])),
+      funds: z.optional(FundsSchema),
       tpls: z.optional(TplsSchema),
     })),
     migrate: z.optional(z.object({
@@ -88,10 +93,7 @@ const MsgsSchema = z.record(
       z.object({
         name: z.string(),
         msg: z.any(),
-        funds: z.optional(z.union([
-          z.array(z.string()),
-          z.literal('prompt'),
-        ])),
+        funds: z.optional(FundsSchema),
         tpls: z.optional(TplsSchema),
       })
     )),
@@ -237,9 +239,12 @@ export class Project {
     if (!raw) throw `Invalid message type: ${type}`;
 
     let funds: Coin[] = [];
-    if (raw.funds === 'prompt') {
-      funds = await inquireFunds({});
-    } else if (raw.funds) {
+    if (typeof raw.funds === 'string' && raw.funds.startsWith('prompt')) {
+      const m = raw.funds.match(/^prompt(?::([a-zA-Z]+))?$/);
+      if (!m) throw new Error('Invalid prompt funds format. Use prompt or prompt:<denom>.');
+      const [, denom] = m;
+      funds = await inquireFunds({ denom }, undefined);
+    } else if (Array.isArray(raw.funds)) {
       funds = parseFunds(raw.funds);
     }
 
