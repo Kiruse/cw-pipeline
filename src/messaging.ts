@@ -98,10 +98,12 @@ export async function processMsg(ctx: MsgContext, msg: any) {
     return msg;
   } else if (typeof msg === 'string' && msg.trim().startsWith('$')) {
     return await substitute(ctx, msg);
+  } else {
+    return msg;
   }
 }
 
-export async function substitute(msgCtx: MsgContext, msg: string) {
+export async function substitute(msgCtx: MsgContext, msg: string): Promise<any> {
   msg = msg.trim();
   if (!msg.startsWith('$')) throw new Error(`Invalid placeholder: ${msg}`);
 
@@ -125,6 +127,8 @@ export async function substitute(msgCtx: MsgContext, msg: string) {
 
   matches = msg.match(/^\$(\w+)\((.*)\)$/);
   if (!matches) throw `Invalid placeholder: ${msg}`;
-  let [, fn, args] = matches;
-  throw new Error('not yet implemented');
+  const [, fn, argsRaw] = matches;
+  const args = argsRaw.split(',').map(a => a.trim());
+  if (!functions[fn as keyof typeof functions]) throw `Invalid function: ${fn}`;
+  return await functions[fn as keyof typeof functions]({ ...msgCtx, name: fn, type: `fn:${fn}` }, args);
 }
