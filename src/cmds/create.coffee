@@ -1,3 +1,6 @@
+import { toHex, toBase64 } from '@apophis-sdk/core/utils.js'
+import { LocalSigner } from '@apophis-sdk/cosmos/local-signer.js'
+import { Argument, Option } from 'commander'
 import fs from 'fs/promises'
 import { Project } from '~/project'
 import { copy, getWorkspaceDeps, isDir, substitutePlaceholders } from '~/templating'
@@ -56,7 +59,33 @@ export default (prog) ->
         ].join '\n'
       console.log 'Done.'
       process.exit 0
+  cmd.command 'mnemonic'
+    .description 'Generate a new mnemonic.'
+    .addArgument WordsArgument
+    .action (nWords, options) ->
+      strength = switch nWords
+        when 12 then 128
+        when 18 then 192
+        when 24 then 256
+      mnemonic = await LocalSigner.generateMnemonic undefined, strength
+      console.log mnemonic
+      process.exit 0
+  cmd.command 'privkey'
+    .description 'Generate a new private key.'
+    .addOption PrivKeyEncodingOption
+    .action (options) ->
+      privkey = await LocalSigner.generatePrivateKey()
+      console.log switch options.encoding
+        when 'hex' then toHex(privkey)
+        when 'base64' then toBase64(privkey)
+      process.exit 0
 
+WordsArgument = new Argument '[nWords]', 'Number of words in the mnemonic'
+  .choices [12, 18, 24]
+  .default 12
+PrivKeyEncodingOption = new Option('--encoding <encoding>', 'Encoding of the private key')
+  .choices ['hex', 'base64']
+  .default 'hex'
 
 getAuthor = (cargo) ->
   lines = cargo.split '\n'
