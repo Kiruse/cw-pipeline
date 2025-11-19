@@ -3,6 +3,7 @@ import BuildCommand from './build.coffee'
 import CreateCommand from './create.coffee'
 import DeployCommand from './deploy.coffee'
 import ExecCommand from './exec.coffee'
+import FindCommand from './find.coffee'
 import InitCommand from './init.coffee'
 import InstantiateCommand from './instantiate.coffee'
 import MigrateCommand from './migrate.coffee'
@@ -20,6 +21,7 @@ export commands = [
   CreateCommand
   DeployCommand
   ExecCommand
+  FindCommand
   InitCommand
   InstantiateCommand
   MigrateCommand

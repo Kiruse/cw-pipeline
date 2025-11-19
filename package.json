@@ -1,6 +1,6 @@
 {
   "name": "cw-pipeline",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "module": "src/index.coffee",
   "type": "module",
   "scripts": {
@@ -13,9 +13,9 @@
     "cwp": "./bin/cwp"
   },
   "dependencies": {
-    "@apophis-sdk/core": "^0.3.11",
-    "@apophis-sdk/cosmos": "^0.3.11",
-    "@apophis-sdk/cosmwasm": "^0.3.11",
+    "@apophis-sdk/core": "^0.3.17-dev.6b8a544",
+    "@apophis-sdk/cosmos": "^0.3.17-dev.6b8a544",
+    "@apophis-sdk/cosmwasm": "^0.3.17-dev.6b8a544",
     "@inquirer/prompts": "^7.0.0",
     "@kiruse/marshal": "^0.2.1",
     "@kiruse/typed-events": "^1.0.1",

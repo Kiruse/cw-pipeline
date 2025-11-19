@@ -1,4 +1,4 @@
 preload = ['bun-coffeescript/register']
 
 [install.scopes]
-# "@apophis-sdk" = "http://localhost:4873/"
+"@apophis-sdk" = "https://npm.pkg.github.com/"

@@ -8,6 +8,7 @@ import YAML from 'yaml'
 import { drand } from '~/drand'
 import { Project } from '~/project'
 import { NetworkOption, MainnetOption, getNetworkConfig, inquire } from '~/prompting'
+import { collectDenomTraces, collectChannels, collectConnections, collectClients, error, findConnection, findClient, findChainById, getChainDirectory } from '~/utils'
 
 ###* @param {import('commander').Command} prog ###
 export default (prog) ->
@@ -69,6 +70,7 @@ export default (prog) ->
 
   addDrand cmd
   addProj cmd
+  addIbc cmd
 
 ###* @param {import('commander').Command} cmd ###
 addDrand = (cmd) ->
@@ -178,4 +180,160 @@ addProj = (cmd) ->
         console.log YAML.stringify contract, { indent: 2 }
       else
         console.log YAML.stringify (await proj.getDeployedContract(network, name)), { indent: 2 }
+      process.exit 0
+
+###* @param {import('commander').Command} cmd ###
+addIbc = (cmd) ->
+  subcmd = cmd.command 'ibc'
+    .description 'Show IBC-related information.'
+  subcmd.command 'denom-traces'
+    .description 'List the IBC denom traces on the current network.'
+    .option '--json', 'Output as JSON. Useful for post-processing with tools like `jq`.', false
+    .addOption NetworkOption()
+    .addOption MainnetOption()
+    .action (opts) ->
+      network = await getNetworkConfig opts
+      denomTraces = await collectDenomTraces network
+      if opts.json
+        console.log JSON.stringify denomTraces, null, 2
+      else
+        console.log YAML.stringify denomTraces, { indent: 2 }
+      process.exit 0
+  subcmd.command 'channel'
+    .description 'Show information about a specific IBC channel.'
+    .argument '[channel]', 'The channel to show information about. Will prompt if not specified.'
+    .option '--json', 'Output as JSON. Useful for post-processing with tools like `jq`.', false
+    .addOption NetworkOption()
+    .addOption MainnetOption()
+    .action (channel, opts) ->
+      network = await getNetworkConfig opts
+      channel = channel or await inquire input,
+        name: 'channel'
+        message: 'IBC channel'
+        validate: (s) -> s.match(/^[a-fA-F0-9]+$/)? or 'Must be a hex string.'
+        options: opts
+      channel = try
+        response = await Cosmos.rest(network).ibc.core.channel.v1.channels[channel]('GET')
+        response.channel
+      catch
+        channels = await collectChannels network
+        channels.find (c) -> c.channel_id is channel
+      if not channel
+        error 'Channel not found.'
+      # Enrich channel with connection, client, and chain name
+      if channel.connection_hops and channel.connection_hops.length > 0
+        connectionId = channel.connection_hops[0]
+        connection = await findConnection network, connectionId
+        if connection
+          chainDirectory = await getChainDirectory()
+          client = await findClient network, connection.client_id
+          if client
+            directoryChain = await findChainById client.chain_id, chainDirectory
+            channel.client_id = client.client_id
+            channel.counterparty.chain_name = directoryChain?.chain_name or 'unknown'
+      if opts.json
+        console.log JSON.stringify channel, null, 2
+      else
+        console.log YAML.stringify channel, { indent: 2 }
+      process.exit 0
+  subcmd.command 'channels'
+    .description 'List the IBC channels on the current network.'
+    .option '--json', 'Output as JSON. Useful for post-processing with tools like `jq`.', false
+    .addOption NetworkOption()
+    .addOption MainnetOption()
+    .action (opts) ->
+      network = await getNetworkConfig opts
+      channels = await collectChannels network
+      if opts.json
+        console.log JSON.stringify channels, null, 2
+      else
+        console.log YAML.stringify channels, { indent: 2 }
+      process.exit 0
+  subcmd.command 'connection'
+    .description 'Show information about a specific IBC connection.'
+    .argument '[connection]', 'The connection to show information about. Will prompt if not specified.'
+    .option '--json', 'Output as JSON. Useful for post-processing with tools like `jq`.', false
+    .addOption NetworkOption()
+    .addOption MainnetOption()
+    .action (connection, opts) ->
+      network = await getNetworkConfig opts
+      connection = connection or await inquire input,
+        name: 'connection'
+        message: 'IBC connection'
+        validate: (s) -> s.match(/^[a-fA-F0-9]+$/)? or 'Must be a hex string.'
+        options: opts
+      connection = try
+        response = await Cosmos.rest(network).ibc.core.connection.v1.connections[connection]('GET')
+        response.connection
+      catch
+        connections = await collectConnections network
+        connections.find (c) -> c.connection_id is connection
+      if not connection
+        error 'Connection not found.'
+      # Enrich connection with client and chain name
+      chainDirectory = await getChainDirectory()
+      client = await findClient network, connection.client_id
+      if client
+        directoryChain = await findChainById client.chain_id, chainDirectory
+        connection.counterparty.chain_name = directoryChain?.chain_name or 'unknown'
+      if opts.json
+        console.log JSON.stringify connection, null, 2
+      else
+        console.log YAML.stringify connection, { indent: 2 }
+      process.exit 0
+  subcmd.command 'connections'
+    .description 'List the IBC connections on the current network.'
+    .option '--json', 'Output as JSON. Useful for post-processing with tools like `jq`.', false
+    .addOption NetworkOption()
+    .addOption MainnetOption()
+    .action (opts) ->
+      network = await getNetworkConfig opts
+      connections = await collectConnections network
+      if opts.json
+        console.log JSON.stringify connections, null, 2
+      else
+        console.log YAML.stringify connections, { indent: 2 }
+      process.exit 0
+  subcmd.command 'client'
+    .description 'Show information about a specific IBC client.'
+    .argument '[client]', 'The client to show information about. Will prompt if not specified.'
+    .option '--json', 'Output as JSON. Useful for post-processing with tools like `jq`.', false
+    .addOption NetworkOption()
+    .addOption MainnetOption()
+    .action (client, opts) ->
+      network = await getNetworkConfig opts
+      client = client or await inquire input,
+        name: 'client'
+        message: 'IBC client'
+        validate: (s) -> s.match(/^[a-fA-F0-9]+$/)? or 'Must be a hex string.'
+        options: opts
+      client = try
+        response = await Cosmos.rest(network).ibc.core.client.v1.client_states[client]('GET')
+        response.client_state
+      catch
+        clients = await collectClients network
+        clients.find (c) -> c.client_id is client
+      if not client
+        error 'Client not found.'
+      # Enrich client with chain name
+      chainDirectory = await getChainDirectory()
+      directoryChain = await findChainById client.chain_id, chainDirectory
+      client.chain_name = directoryChain?.chain_name or 'unknown'
+      if opts.json
+        console.log JSON.stringify client, null, 2
+      else
+        console.log YAML.stringify client, { indent: 2 }
+      process.exit 0
+  subcmd.command 'clients'
+    .description 'List the IBC clients on the current network.'
+    .option '--json', 'Output as JSON. Useful for post-processing with tools like `jq`.', false
+    .addOption NetworkOption()
+    .addOption MainnetOption()
+    .action (opts) ->
+      network = await getNetworkConfig opts
+      clients = await collectClients network
+      if opts.json
+        console.log JSON.stringify clients, null, 2
+      else
+        console.log YAML.stringify clients, { indent: 2 }
       process.exit 0
