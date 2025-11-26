@@ -19,6 +19,8 @@ addIbc = (cmd) ->
     .argument '[denom]', 'Name of the base denomination on the source chain. Will prioritize exact matches, then substring matches. Will prompt if not specified.'
     .option '--json', 'Output as JSON. Useful for post-processing with tools like `jq`.', false
     .option '--no-multihop', 'Only show denom traces that are not multi-hop.'
+    .option '--chain <chain-name>', 'Only show denom traces that are on the specified chain.'
+    .option '--chain-id <chain-id>', 'Only show denom traces that are on the specified chain ID.'
     .addOption MinSupplyOption()
     .addOption NetworkOption()
     .addOption MainnetOption()
@@ -42,7 +44,7 @@ addIbc = (cmd) ->
 
         hash = IBC.hash "#{denomTrace.path}/#{denomTrace.base_denom}"
         supply = await Cosmos.ws(network).query Bank.Query.SupplyOf, denom: "ibc/#{hash}"
-        return if supply.amount.amount < opts.minSupply
+        return if supply.amount.amount < opts.minSupply or supply.amount.amount is 0
 
         channel = await findChannel network, channel
         [connection] = channel.connection_hops
@@ -54,6 +56,9 @@ addIbc = (cmd) ->
         error 'Client not found.' unless client
 
         directoryChain = await findChainById client.chain_id, chainDirectory
+
+        return if opts.chain and directoryChain?.chain_name isnt opts.chain
+        return if opts.chain_id and client.chain_id isnt opts.chain_id
 
         denomTrace.counterparty =
           client_id: connection.client_id
