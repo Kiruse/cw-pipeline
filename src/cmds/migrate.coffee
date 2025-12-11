@@ -13,6 +13,7 @@ export default (prog) ->
     .option '--code-id <codeId>', 'Code ID to migrate to. When in a project, the code ID will be inferred from the contract name. Rejects if the latest code ID is the same as the current.'
     .option '-m, --msg <path>', 'Path to the YAML file containing the migrate message. Defaults to msg.migrate.yml in the current directory.'
     .option '--no-validate', 'Do not validate the migrate message against the schema. Defaults to validating.'
+    .option '-f, --force', 'Force migration even if the latest code ID is the same as the current.'
     .addOption NetworkOption()
     .addOption MainnetOption()
     .action (contract, options) ->
@@ -46,7 +47,7 @@ export default (prog) ->
         error 'Must specify code ID when not in a project'
 
       currentCodeId = await proj?.getCurrentCodeId(network, contractName)
-      error 'Latest/specified code ID is identical to current' if currentCodeId is codeId
+      error 'Latest/specified code ID is identical to current' if currentCodeId is codeId and not options.force
 
       {msg} = await proj.getMsg({ network, signer }, contract, 'migrate')
       error 'No migrate message found in .cwp/msgs.yml' unless msg
