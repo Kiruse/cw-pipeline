@@ -13,9 +13,9 @@
     "cwp": "./bin/cwp"
   },
   "dependencies": {
-    "@apophis-sdk/core": "^0.3.17-dev.6b8a544",
-    "@apophis-sdk/cosmos": "^0.3.17-dev.6b8a544",
-    "@apophis-sdk/cosmwasm": "^0.3.17-dev.6b8a544",
+    "@apophis-sdk/core": "^0.3.17-dev.e096858",
+    "@apophis-sdk/cosmos": "^0.3.17-dev.e096858",
+    "@apophis-sdk/cosmwasm": "^0.3.17-dev.e096858",
     "@inquirer/prompts": "^7.0.0",
     "@kiruse/marshal": "^0.2.1",
     "@kiruse/typed-events": "^1.0.1",

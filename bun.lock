@@ -5,9 +5,9 @@
     "": {
       "name": "cw-pipeline",
       "dependencies": {
-        "@apophis-sdk/core": "^0.3.17-dev.6b8a544",
-        "@apophis-sdk/cosmos": "^0.3.17-dev.6b8a544",
-        "@apophis-sdk/cosmwasm": "^0.3.17-dev.6b8a544",
+        "@apophis-sdk/core": "^0.3.17-dev.e096858",
+        "@apophis-sdk/cosmos": "^0.3.17-dev.e096858",
+        "@apophis-sdk/cosmwasm": "^0.3.17-dev.e096858",
         "@inquirer/prompts": "^7.0.0",
         "@kiruse/marshal": "^0.2.1",
         "@kiruse/typed-events": "^1.0.1",
@@ -36,11 +36,11 @@
     },
   },
   "packages": {
-    "@apophis-sdk/core": ["@apophis-sdk/core@0.3.17-dev.6b8a544", "https://npm.pkg.github.com/download/@apophis-sdk/core/0.3.17-dev.6b8a544/6e678868904e74306098c3fa5fc5ab60a926c82b", { "dependencies": { "@kiruse/decimal": "^1.0.5-fix.1", "@kiruse/hiproto": "^0.1.15", "@kiruse/marshal": "^0.2.1", "@kiruse/restful": "^0.2.3-fix.3", "@kiruse/typed-events": "^1.1.0", "@kristiandupont/recase": "^1.3.1", "@noble/hashes": "^1.7.1", "@preact/signals-core": "^1.8.0", "@scure/base": "^1.2.4", "cosmjs-types": "^0.9.0", "tslib": "^2.6.3" }, "peerDependencies": { "@apophis-sdk/cosmos": "^0.3.15", "typescript": "^5.0.0" } }, "sha512-AuUdyQNcKRUCBhDSZdUrZ42s8TBcpr+AWa+H7Azgj9+ERLE+yoJjbrbEfpGJ0dNaOo9PYEzmvIO2iQJ/lt6iYw=="],
+    "@apophis-sdk/core": ["@apophis-sdk/core@0.3.17-dev.e096858", "https://npm.pkg.github.com/download/@apophis-sdk/core/0.3.17-dev.e096858/2d705b6ac7caa801bb65bb9e1220040b4c4fe017", { "dependencies": { "@kiruse/decimal": "^1.0.5-fix.1", "@kiruse/hiproto": "^0.1.17", "@kiruse/marshal": "^0.2.1", "@kiruse/restful": "^0.2.3-fix.3", "@kiruse/typed-events": "^1.1.0", "@kristiandupont/recase": "^1.3.1", "@noble/hashes": "^1.7.1", "@preact/signals-core": "^1.8.0", "@scure/base": "^1.2.4", "cosmjs-types": "^0.9.0", "tslib": "^2.6.3" }, "peerDependencies": { "@apophis-sdk/cosmos": "^0.3.15", "typescript": "^5.0.0" } }, "sha512-4gkDRSBZ3D5261e5YAkGQS3F85iDFjNmpV2rihrju6SaKYzH9BAtICcxgcWwkUvRmoPza3Zzr5u1uaaaRu6e6A=="],
 
-    "@apophis-sdk/cosmos": ["@apophis-sdk/cosmos@0.3.17-dev.6b8a544", "https://npm.pkg.github.com/download/@apophis-sdk/cosmos/0.3.17-dev.6b8a544/a624471eab790f7e8ebfa01ac617a1918ea8c541", { "dependencies": { "@kiruse/hiproto": "^0.1.15", "@kiruse/marshal": "^0.2.1", "@noble/hashes": "^1.7.1", "@noble/secp256k1": "^3.0.0", "@scure/base": "^1.2.4", "@scure/bip32": "^1.6.2", "@scure/bip39": "^1.5.4", "classnames": "^2.5.1", "tslib": "^2.6.3" }, "peerDependencies": { "@apophis-sdk/core": "0.3.17", "@preact/signals": "^1.3.0", "preact": "^10.23.2", "typescript": "^5.0.0" } }, "sha512-CRKMlymMz7uzA53enOrTgLQMpyZ2P1dLxLtPV98OEGh92Pq9yHsgQaNcT+MrYR3mBsy9P5n/ScATY6NaOfjkRw=="],
+    "@apophis-sdk/cosmos": ["@apophis-sdk/cosmos@0.3.17-dev.e096858", "https://npm.pkg.github.com/download/@apophis-sdk/cosmos/0.3.17-dev.e096858/f098b9a660f34695933280318c53a1cce86c87b8", { "dependencies": { "@kiruse/hiproto": "^0.1.17", "@kiruse/marshal": "^0.2.1", "@noble/hashes": "^1.7.1", "@noble/secp256k1": "^3.0.0", "@scure/base": "^1.2.4", "@scure/bip32": "^1.6.2", "@scure/bip39": "^1.5.4", "classnames": "^2.5.1", "tslib": "^2.6.3" }, "peerDependencies": { "@apophis-sdk/core": "0.3.17", "@preact/signals": "^1.3.0", "preact": "^10.23.2", "typescript": "^5.0.0" } }, "sha512-TqbGkpIYwZpB0ON2njA9sfQpvHh3LcmEkr7svvIct/ofFEKYjcYi7BpT8rLoWI3Uo/CQz7ox1Yf6IFamO5duOw=="],
 
-    "@apophis-sdk/cosmwasm": ["@apophis-sdk/cosmwasm@0.3.17-dev.6b8a544", "https://npm.pkg.github.com/download/@apophis-sdk/cosmwasm/0.3.17-dev.6b8a544/6d262d119ef1061d293ab6947ef7f78aa16e7bce", { "dependencies": { "@kiruse/hiproto": "^0.1.15", "@kiruse/marshal": "^0.2.1", "classnames": "^2.5.1", "tslib": "^2.6.3" }, "peerDependencies": { "@apophis-sdk/core": "0.3.17", "@apophis-sdk/cosmos": "0.3.17", "@preact/signals": "^1.3.0", "preact": "^10.23.2", "typescript": "^5.0.0" } }, "sha512-/bjL4TieuYgEnaIJFCg9/fq+1Ws/NlEnuU/T4p3+8wjhQg3/w3i0XkX7vMsKnF1I/6MhTmmkhY17qw4aFVhAqw=="],
+    "@apophis-sdk/cosmwasm": ["@apophis-sdk/cosmwasm@0.3.17-dev.e096858", "https://npm.pkg.github.com/download/@apophis-sdk/cosmwasm/0.3.17-dev.e096858/63debd7861a0c89116f4401b5f32e83ebcc800e2", { "dependencies": { "@kiruse/hiproto": "^0.1.17", "@kiruse/marshal": "^0.2.1", "classnames": "^2.5.1", "tslib": "^2.6.3" }, "peerDependencies": { "@apophis-sdk/core": "0.3.17", "@apophis-sdk/cosmos": "0.3.17", "@preact/signals": "^1.3.0", "preact": "^10.23.2", "typescript": "^5.0.0" } }, "sha512-khFZ0xREj7sMggNT9WV3WiGA5pqQC9hk/A5YB0YVVqYWuwdUAbYMfl2PtZ76UFF+B+FvGgRxc6XKmynE4sIgVw=="],
 
     "@inquirer/checkbox": ["@inquirer/checkbox@4.2.2", "", { "dependencies": { "@inquirer/core": "^10.2.0", "@inquirer/figures": "^1.0.13", "@inquirer/type": "^3.0.8", "ansi-escapes": "^4.3.2", "yoctocolors-cjs": "^2.1.2" }, "peerDependencies": { "@types/node": ">=18" }, "optionalPeers": ["@types/node"] }, "sha512-E+KExNurKcUJJdxmjglTl141EwxWyAHplvsYJQgSwXf8qiNWkTxTuCCqmhFEmbIXd4zLaGMfQFJ6WrZ7fSeV3g=="],
 
@@ -76,7 +76,7 @@
 
     "@kiruse/decimal": ["@kiruse/decimal@1.0.5-fix.1", "", { "peerDependencies": { "@kiruse/marshal": "^0.2.0-rc.1" } }, "sha512-U852LIlGB2CIYYZ19lSe9cSpOxTQbIn8awvlT5JZQdw+ed3847YP/rNMv8p7qeJrNiqPC1eqSN4ALldPz829ZQ=="],
 
-    "@kiruse/hiproto": ["@kiruse/hiproto@0.1.15", "", { "peerDependencies": { "typescript": "^5" } }, "sha512-3gtWPO7bu/LjUgmHt4HaHejYz/dStsvbT4ILybckWe8AJaxyQUImC8gMEdFpv2bW1/iZ0XTUGnijXfQfI9ZNkA=="],
+    "@kiruse/hiproto": ["@kiruse/hiproto@0.1.17", "", { "peerDependencies": { "typescript": "^5" } }, "sha512-RC2ib1NXFy1jlsb4IqtH7sWwQkmRtWR1a91HtobOxNWxnwjRTMj1jTGfBngI+ajxfd1gVTwD8E+PEkhlhvUTcw=="],
 
     "@kiruse/marshal": ["@kiruse/marshal@0.2.1", "", {}, "sha512-n3fsD0Y4ZXZ49DjeMAs9ixY8x6CqmcUN3BrD2gua7Kbj7qex/q3hqtTdNsHfK0HHt7OiOteOIyEe/4In1EGdGw=="],
 
@@ -194,7 +194,7 @@
 
     "picocolors": ["picocolors@1.1.1", "", {}, "sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA=="],
 
-    "preact": ["preact@10.27.2", "", {}, "sha512-5SYSgFKSyhCbk6SrXyMpqjb5+MQBgfvEKE/OC+PujcY34sOpqtr+0AZQtPYx5IA6VxynQ7rUPCtKzyovpj9Bpg=="],
+    "preact": ["preact@10.28.0", "", {}, "sha512-rytDAoiXr3+t6OIP3WGlDd0ouCUG1iCWzkcY3++Nreuoi17y6T5i/zRhe6uYfoVcxq6YU+sBtJouuRDsq8vvqA=="],
 
     "ramda": ["ramda@0.30.1", "", {}, "sha512-tEF5I22zJnuclswcZMc8bDIrwRHRzf+NqVEmqg50ShAZMP7MWeR/RGDthfM/p+BlqvF2fXAzpn8i+SJcYD3alw=="],
 

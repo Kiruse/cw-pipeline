@@ -4,7 +4,7 @@ import fs from 'fs/promises'
 import { select } from 'inquirer-select-pro'
 import YAML from 'yaml'
 import { Project, marshal } from '~/project'
-import { getNetworkConfig, getSigner, NetworkOption, MainnetOption, FundsOption, parseFunds, isAddress, inquireEditor, inquire } from '~/prompting'
+import { getNetworkConfig, getSigner, NetworkOption, MainnetOption, FundsOption, parseFunds, isAddress, inquireEditor, inquire } from '~/prompting.js'
 import { isFile } from '~/templating'
 import { error, log } from '~/utils'
 
@@ -18,12 +18,15 @@ export default (prog) ->
     .option '-m, --msg <path_or_name>', 'In a project, this may be the name of the message to execute as found in your .cwp/msgs.yml file. Otherwise, it is the path to the YAML file containing your message.'
     .option '--no-validate', 'Whether to skip message validation. Defaults to validating.'
     .argument '[contract]', 'Contract name (if in a project) or address to execute. When omitted, prompts for a contract.'
-    .action (contract, opts) ->
+    .argument '[address]', 'Contract address to execute. When specified, the given contract is assumed to be of the indicated type.'
+    .action (contract, address, opts) ->
+      proj = await Project.find()
       network = await getNetworkConfig opts
-      proj = await Project.find().catch(=>)
-
-      return await execAddress { opts..., contract, proj, network } if isAddress contract
       error 'Must specify a contract address when not in a project' unless proj
+
+      if isAddress contract
+        address = contract
+        contract = undefined
 
       unless contract
         contracts = await proj.getDeployedContracts(network)
@@ -36,33 +39,29 @@ export default (prog) ->
               .sort()
               .map (c) -> { name: c.name, value: c.name }
           multiple: false
-      await execAddress { opts..., contract, proj, network }
+      await execAddress { opts..., contract, address, proj, network }
 
-execAddress = ({ proj, network, contract, opts... }) ->
+execAddress = ({ proj, network, address, contract, opts... }) ->
   signer = await getSigner()
   await signer.connect [network]
 
-  contractName = contract
-  {msg, funds, addr} = if isAddress contract
-    error 'Msg must be a filepath when executing on a contract address' unless await isFile opts.msg
-    msg = await fs.readFile opts.msg, 'utf8'
-    { msg, addr: contract, funds: [] }
-  else
-    {address: addr, contract, name: contractName} = await proj.getDeployedContract(network, contract)
-    unless opts.msg
-      msgs = await proj.getMsgs contract, 'execute'
-      error "No execute messages found for #{contract} in .cwp/msgs.yml" unless msgs
-      opts.msg = await inquire select,
-        name: 'msg.exec'
-        message: 'Choose a prepared execute message'
-        options: (input) ->
-          msgs
-            .filter (m) -> not input.trim() or m.includes(input.trim())
-            .sort()
-            .map (m) -> { name: m, value: m }
-        multiple: false
-    data = await proj.getMsg({ network, signer }, contract, "execute:#{opts.msg}")
-    { data..., addr }
+  tmp = await proj.getDeployedContract(network, contract)
+  {contract, name: contractName} = tmp
+  address ?= tmp.address
+
+  unless opts.msg
+    msgs = await proj.getMsgs contract, 'execute'
+    error "No execute messages found for #{contract} in .cwp/msgs.yml" unless msgs
+    opts.msg = await inquire select,
+      name: 'msg.exec'
+      message: 'Choose a prepared execute message'
+      options: (input) ->
+        msgs
+          .filter (m) -> not input.trim() or m.includes(input.trim())
+          .sort()
+          .map (m) -> { name: m, value: m }
+      multiple: false
+  {msg, funds} = await proj.getMsg({ network, signer }, contract, "execute:#{opts.msg}")
   await proj.validateMsg contract, 'execute', msg if proj and opts.validate
 
   funds = parseFunds opts.funds ? funds ? []
@@ -70,7 +69,7 @@ execAddress = ({ proj, network, contract, opts... }) ->
   report = {
     name: contractName
     contract
-    addr
+    address
     msg
     funds: funds.map((f) -> "#{f.amount}#{f.denom}").join(', ')
   }
@@ -78,7 +77,7 @@ execAddress = ({ proj, network, contract, opts... }) ->
   error 'User aborted execution' unless await confirm 'Continue?'
 
   try
-    result = await CosmWasm.execute network, signer, addr, msg, funds
+    result = await CosmWasm.execute network, signer, address, msg, funds
     await log network, result
     console.log 'Success! Details have been logged to cw-pipeline.log.'
     process.exit 0
