@@ -66,6 +66,27 @@ export default (prog) ->
       else
         console.log "#{res.contract}, v#{res.version}"
       process.exit 0
+  cmd.command 'balance'
+    .description 'Show the balance of a specific account.'
+    .argument '<address>', 'The address of the account to show the balance of.'
+    .option '--json', 'Output as JSON. Useful for post-processing with tools like `jq`.', false
+    .addOption NetworkOption()
+    .addOption MainnetOption()
+    .action (addr, opts) ->
+      network = await getNetworkConfig opts
+      allBalances = []
+      paginationKey = undefined
+      while true
+        params = if paginationKey then { 'pagination.key': paginationKey } else {}
+        res = await Cosmos.rest(network).cosmos.bank.v1beta1.balances[addr]('GET', params)
+        allBalances.push ...(res.balances or [])
+        paginationKey = res.pagination?.next_key
+        break unless paginationKey
+      if opts.json
+        console.log JSON.stringify allBalances, null, 2
+      else
+        console.log YAML.stringify allBalances, indent: 2
+      process.exit 0
 
   addDrand cmd
   addProj cmd
