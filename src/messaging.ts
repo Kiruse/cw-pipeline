@@ -98,6 +98,8 @@ export async function processMsg(ctx: MsgContext, msg: any) {
     return msg;
   } else if (typeof msg === 'string' && msg.trim().startsWith('$')) {
     return await substitute(ctx, msg);
+  } else {
+    return msg;
   }
 }
 
